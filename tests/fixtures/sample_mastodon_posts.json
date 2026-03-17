@@ -1,0 +1,49 @@
+[
+  {
+    "url": "https://fosstodon.org/@b0rk/109876543210",
+    "content": "<p>Most people learn SQL joins wrong the first time. Drawing them as Venn diagrams is technically inaccurate — what you actually want is set theory with bag semantics. The picture matters.</p>",
+    "created_at": "2026-03-17T08:00:00.000Z",
+    "replies_count": 15,
+    "favourites_count": 62,
+    "card": null,
+    "account": {
+      "acct": "b0rk",
+      "display_name": "Julia Evans"
+    },
+    "tags": [
+      {"name": "sql"},
+      {"name": "teaching"}
+    ]
+  },
+  {
+    "url": "https://mastodon.social/@mlops/109876500001",
+    "content": "<p>Running phi4-mini locally for quick summaries. Impressed by quality for the size. The small-model story keeps getting better. <a href=\"#localai\">#localai</a></p>",
+    "created_at": "2026-03-17T07:45:00.000Z",
+    "replies_count": 4,
+    "favourites_count": 28,
+    "card": null,
+    "account": {
+      "acct": "mlops",
+      "display_name": "ML Ops Weekly"
+    },
+    "tags": [
+      {"name": "localai"}
+    ]
+  },
+  {
+    "url": "https://mastodon.social/@linkposter/109876400000",
+    "content": "<p>Great article about Python: <a href=\"https://example.com\">https://example.com</a></p>",
+    "created_at": "2026-03-17T06:00:00.000Z",
+    "replies_count": 0,
+    "favourites_count": 2,
+    "card": {
+      "url": "https://example.com",
+      "title": "Some Python Article"
+    },
+    "account": {
+      "acct": "linkposter",
+      "display_name": "Link Poster"
+    },
+    "tags": []
+  }
+]

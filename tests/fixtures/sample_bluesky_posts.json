@@ -1,0 +1,72 @@
+{
+  "posts": [
+    {
+      "uri": "at://did:plc:abc123/app.bsky.feed.post/rkey001",
+      "author": {
+        "handle": "simonw.bsky.social",
+        "displayName": "Simon Willison"
+      },
+      "record": {
+        "text": "The context window is the new RAM. Local LLMs running on consumer hardware have fundamentally changed what's possible for privacy-first tools. No cloud, no tracking, full control.",
+        "createdAt": "2026-03-17T07:30:00.000Z",
+        "facets": [
+          {
+            "features": [
+              {
+                "$type": "app.bsky.richtext.facet#tag",
+                "tag": "localai"
+              }
+            ]
+          }
+        ]
+      },
+      "replyCount": 12,
+      "likeCount": 87,
+      "embed": {}
+    },
+    {
+      "uri": "at://did:plc:def456/app.bsky.feed.post/rkey002",
+      "author": {
+        "handle": "thelarkinn.bsky.social",
+        "displayName": "Sean Larkin"
+      },
+      "record": {
+        "text": "DuckDB WASM in the browser is genuinely wild. Full SQL analytics with zero backend. The web app model is getting inverted.",
+        "createdAt": "2026-03-17T06:15:00.000Z",
+        "facets": [
+          {
+            "features": [
+              {
+                "$type": "app.bsky.richtext.facet#tag",
+                "tag": "duckdb"
+              }
+            ]
+          }
+        ]
+      },
+      "replyCount": 8,
+      "likeCount": 45,
+      "embed": {}
+    },
+    {
+      "uri": "at://did:plc:ghi789/app.bsky.feed.post/rkey003",
+      "author": {
+        "handle": "spammer.bsky.social",
+        "displayName": "Link Spammer"
+      },
+      "record": {
+        "text": "Check out this article!",
+        "createdAt": "2026-03-17T05:00:00.000Z",
+        "facets": []
+      },
+      "replyCount": 0,
+      "likeCount": 1,
+      "embed": {
+        "external": {
+          "uri": "https://somesite.com/article",
+          "title": "Some Article"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+# Social Post Reader configuration
+# Copy to ~/.social-post-reader.toml and edit.
+# This file is a template — do not commit your personal copy.
+
+[social]
+keywords = ["duckdb", "python", "local ai", "sqlite", "llm", "sql", "data engineering"]
+mastodon_instances = ["mastodon.social", "fosstodon.org"]
+# include_link_posts = false  # set true to include posts that share article links
+
+[profile]
+description = """
+I write and teach SQL, Python, and data engineering for working developers.
+I run the "Vibe Coded and Lived to Tell" blog series about building local-first
+AI tools. My day job involves data pipelines and internal tooling at a large
+financial institution. Active series: local-first AI tools, SQL for analysts.
+Interested in: local LLMs, DuckDB, SQLite, teaching pedagogy, developer experience,
+data engineering patterns.
+"""
+
+[settings]
+threshold = 0.5       # minimum relevance score to include (0.0–1.0)
+max_candidates = 5    # maximum candidates in the daily digest
+provider = "local"    # local | anthropic | groq | deepseek
+# store = "~/sync/social-reader/social-post-reader.db"  # auto-discovered if ~/sync/social-reader/ exists

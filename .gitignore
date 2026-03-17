@@ -1,0 +1,28 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Secrets and local overrides
+.env
+.envrc
+CLAUDE.md
+uv.toml
+
+# Personal config (contains profile description and keywords)
+.social-post-reader.toml
+
+# SQLite databases
+*.db
+
+# Logs
+*.log
+
+# Test cache
+.pytest_cache/
