@@ -1,5 +1,7 @@
 """Tests for scorer.py — post scoring and digest formatting."""
 
+from unittest.mock import patch
+
 import pytest
 
 from fetcher import SocialPost
@@ -90,6 +92,35 @@ class TestScorePost:
         result = score_post(post, "profile", BrokenProvider())
         assert result.score == 0.0
         assert result.angle == ""
+
+    def test_retries_on_429_and_succeeds(self):
+        post = _make_post()
+        calls = []
+
+        class FlakeyProvider:
+            def complete(self, s, u):
+                calls.append(1)
+                if len(calls) < 2:
+                    raise RuntimeError("429 Too Many Requests")
+                return '{"score": 0.8, "angle": "mention DuckDB"}'
+
+        with patch("scorer.time.sleep"):
+            result = score_post(post, "profile", FlakeyProvider())
+
+        assert result.score == pytest.approx(0.8)
+        assert len(calls) == 2
+
+    def test_gives_up_after_four_429s(self):
+        post = _make_post()
+
+        class AlwaysRateLimited:
+            def complete(self, s, u):
+                raise RuntimeError("429 Too Many Requests")
+
+        with patch("scorer.time.sleep"):
+            result = score_post(post, "profile", AlwaysRateLimited())
+
+        assert result.score == 0.0
 
     def test_truncates_long_post_text(self):
         """Provider receives at most 1000 chars of post text."""

@@ -14,6 +14,7 @@ Mastodon:
 
 import logging
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
 import requests
 
@@ -253,6 +254,40 @@ def fetch_mastodon_posts(
                 )
 
     return posts
+
+
+def filter_posts(
+    posts: list[SocialPost],
+    since_hours: int = 48,
+    min_words: int = 10,
+) -> list[SocialPost]:
+    """Drop posts that are too old or too short to be worth scoring.
+
+    Args:
+        posts: Posts to filter.
+        since_hours: Drop posts older than this many hours. 0 = no age filter.
+        min_words: Drop posts with fewer words than this.
+
+    Returns:
+        Filtered list. Posts with unparseable timestamps are kept (fail open).
+    """
+    now = datetime.now(tz=timezone.utc)
+    out: list[SocialPost] = []
+    for post in posts:
+        if min_words and len(post.text.split()) < min_words:
+            continue
+        if since_hours and post.created_at:
+            try:
+                created = datetime.fromisoformat(
+                    post.created_at.replace("Z", "+00:00")
+                )
+                age_hours = (now - created).total_seconds() / 3600
+                if age_hours > since_hours:
+                    continue
+            except ValueError:
+                pass  # unparseable timestamp — keep the post
+        out.append(post)
+    return out
 
 
 def _strip_html(html: str) -> str:

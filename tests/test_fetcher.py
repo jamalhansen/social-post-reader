@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from datetime import datetime, timedelta, timezone
+
 from fetcher import (
     SocialPost,
     _bsky_has_external_link,
@@ -11,6 +13,7 @@ from fetcher import (
     _strip_html,
     fetch_bluesky_posts,
     fetch_mastodon_posts,
+    filter_posts,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -171,3 +174,58 @@ class TestFetchMastodonPosts:
         assert _keyword_to_hashtag("local ai") == "localai"
         assert _keyword_to_hashtag("duckdb") == "duckdb"
         assert _keyword_to_hashtag("data-engineering") == "dataengineering"
+
+
+def _make_post(handle="user.bsky.social", text="word " * 15, created_at=None) -> SocialPost:
+    if created_at is None:
+        created_at = datetime.now(tz=timezone.utc).isoformat()
+    return SocialPost(
+        platform="bluesky",
+        author_handle=handle,
+        author_display_name="User",
+        text=text.strip(),
+        post_url=f"https://bsky.app/profile/{handle}/post/rkey",
+        reply_count=3,
+        like_count=10,
+        created_at=created_at,
+    )
+
+
+class TestFilterPosts:
+    def test_keeps_recent_posts(self):
+        post = _make_post()
+        result = filter_posts([post], since_hours=48)
+        assert result == [post]
+
+    def test_drops_old_posts(self):
+        old_ts = (datetime.now(tz=timezone.utc) - timedelta(hours=72)).isoformat()
+        post = _make_post(created_at=old_ts)
+        result = filter_posts([post], since_hours=48)
+        assert result == []
+
+    def test_no_age_filter_when_zero(self):
+        old_ts = (datetime.now(tz=timezone.utc) - timedelta(hours=200)).isoformat()
+        post = _make_post(created_at=old_ts)
+        result = filter_posts([post], since_hours=0)
+        assert result == [post]
+
+    def test_drops_short_posts(self):
+        post = _make_post(text="too short")
+        result = filter_posts([post], min_words=10)
+        assert result == []
+
+    def test_keeps_posts_at_min_word_threshold(self):
+        post = _make_post(text="word " * 10)
+        result = filter_posts([post], min_words=10)
+        assert result == [post]
+
+    def test_keeps_unparseable_timestamp(self):
+        post = _make_post(created_at="not-a-date")
+        result = filter_posts([post], since_hours=1)
+        assert result == [post]
+
+    def test_handles_z_suffix_timestamp(self):
+        ts = (datetime.now(tz=timezone.utc) - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        post = _make_post(created_at=ts)
+        result = filter_posts([post], since_hours=48)
+        assert result == [post]

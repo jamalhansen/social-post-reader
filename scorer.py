@@ -21,6 +21,7 @@ The angle is a prompt, not a script. It sketches the reply, it doesn't write it.
 
 import json
 import logging
+import time
 from dataclasses import dataclass
 
 from fetcher import SocialPost
@@ -88,18 +89,26 @@ def score_post(
         text=post.text[:1000],  # cap to avoid blowing context on long posts
     )
 
-    try:
-        raw = provider.complete(system, user)
-        data = _parse_response(raw)
-        score = float(data.get("score", 0.0))
-        score = max(0.0, min(1.0, score))
-        angle = str(data.get("angle", "")).strip()
-        if score < 0.4:
-            angle = ""
-        return ScoredPost(post=post, score=score, angle=angle)
-    except Exception as e:
-        logger.warning("Scoring failed for post by %s: %s", post.author_handle, e)
-        return ScoredPost(post=post, score=0.0, angle="")
+    for attempt in range(4):
+        try:
+            raw = provider.complete(system, user)
+            data = _parse_response(raw)
+            score = float(data.get("score", 0.0))
+            score = max(0.0, min(1.0, score))
+            angle = str(data.get("angle", "")).strip()
+            if score < 0.4:
+                angle = ""
+            return ScoredPost(post=post, score=score, angle=angle)
+        except Exception as e:
+            msg = str(e)
+            if "429" in msg and attempt < 3:
+                wait = 2 ** attempt  # 1s, 2s, 4s
+                logger.warning("Rate limited — waiting %ds before retry (attempt %d/3)", wait, attempt + 1)
+                time.sleep(wait)
+                continue
+            logger.warning("Scoring failed for post by %s: %s", post.author_handle, e)
+            return ScoredPost(post=post, score=0.0, angle="")
+    return ScoredPost(post=post, score=0.0, angle="")
 
 
 def _parse_response(raw: str) -> dict:

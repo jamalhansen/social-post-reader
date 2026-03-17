@@ -22,7 +22,7 @@ from local_first_common.providers import PROVIDERS
 
 import config
 import store as db_store
-from fetcher import SocialPost, fetch_bluesky_posts, fetch_mastodon_posts
+from fetcher import SocialPost, fetch_bluesky_posts, fetch_mastodon_posts, filter_posts
 from scorer import format_digest, score_posts
 
 app = typer.Typer(help="Daily digest of social posts worth replying to.")
@@ -96,6 +96,14 @@ def run(
         int,
         typer.Option("--max", help="Maximum candidates in the digest"),
     ] = config.DEFAULT_MAX_CANDIDATES,
+    since_hours: Annotated[
+        int,
+        typer.Option("--since-hours", help="Ignore posts older than N hours (0 = no limit)"),
+    ] = config.DEFAULT_SINCE_HOURS,
+    score_limit: Annotated[
+        int,
+        typer.Option("--limit", "-l", help="Max posts to send to the LLM for scoring"),
+    ] = config.DEFAULT_SCORE_LIMIT,
     store_path: Annotated[
         str,
         typer.Option("--store", help="SQLite DB path for tracking"),
@@ -131,14 +139,26 @@ def run(
         typer.echo("No posts fetched. Check your keywords and network.")
         raise typer.Exit(0)
 
+    # Age + length pre-filter
+    before = len(all_posts)
+    all_posts = filter_posts(all_posts, since_hours=since_hours, min_words=config.DEFAULT_MIN_WORDS)
+    if before != len(all_posts):
+        typer.echo(f"  → {len(all_posts)} remain after age/length filter (dropped {before - len(all_posts)})")
+
     # Deduplicate against store if enabled
     if not no_store and not dry_run:
         db_store.init_db(store_path)
         unseen = [p for p in all_posts if not db_store.is_seen(p.post_url, store_path)]
-        typer.echo(f"Scoring {len(unseen)} new posts (skipping {len(all_posts) - len(unseen)} seen)...")
+        typer.echo(f"  → {len(unseen)} unseen (skipping {len(all_posts) - len(unseen)} already stored)")
         all_posts = unseen
-    else:
-        typer.echo(f"Scoring {len(all_posts)} posts...")
+
+    # Cap before scoring: sort by engagement (reply + like) so we send the most active posts
+    if score_limit and len(all_posts) > score_limit:
+        all_posts.sort(key=lambda p: p.reply_count + p.like_count, reverse=True)
+        typer.echo(f"  → Capped at {score_limit} posts for scoring (sorted by engagement)")
+        all_posts = all_posts[:score_limit]
+
+    typer.echo(f"Scoring {len(all_posts)} posts...")
 
     scored = score_posts(all_posts, config.PROFILE, llm, threshold=threshold, verbose=verbose)
     typer.echo(f"Found {len(scored)} candidates above threshold {threshold}")

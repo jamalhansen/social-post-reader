@@ -70,6 +70,9 @@ _settings = _cfg.get("settings", {})
 DEFAULT_THRESHOLD: float = _settings.get("threshold", 0.5)
 DEFAULT_MAX_CANDIDATES: int = _settings.get("max_candidates", 5)
 DEFAULT_PROVIDER: str = os.environ.get("MODEL_PROVIDER") or _settings.get("provider", "local")
+DEFAULT_SINCE_HOURS: int = _settings.get("since_hours", 48)
+DEFAULT_SCORE_LIMIT: int = _settings.get("score_limit", 75)
+DEFAULT_MIN_WORDS: int = _settings.get("min_words", 10)
 
 def _resolve_db_path() -> str:
     """Resolve the SQLite DB path with three-tier priority:
