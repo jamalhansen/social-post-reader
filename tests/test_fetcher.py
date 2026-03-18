@@ -176,7 +176,13 @@ class TestFetchMastodonPosts:
         assert _keyword_to_hashtag("data-engineering") == "dataengineering"
 
 
-def _make_post(handle="user.bsky.social", text="word " * 15, created_at=None) -> SocialPost:
+_ENGLISH_TEXT = (
+    "Building local-first AI tools with Python and DuckDB on your own hardware "
+    "gives you privacy, control, and a great learning experience."
+)
+
+
+def _make_post(handle="user.bsky.social", text=_ENGLISH_TEXT, created_at=None) -> SocialPost:
     if created_at is None:
         created_at = datetime.now(tz=timezone.utc).isoformat()
     return SocialPost(
@@ -211,11 +217,12 @@ class TestFilterPosts:
 
     def test_drops_short_posts(self):
         post = _make_post(text="too short")
-        result = filter_posts([post], min_words=10)
+        result = filter_posts([post], min_words=10, english_only=False)
         assert result == []
 
     def test_keeps_posts_at_min_word_threshold(self):
-        post = _make_post(text="word " * 10)
+        text = "This is a sample post with exactly ten words here."
+        post = _make_post(text=text)
         result = filter_posts([post], min_words=10)
         assert result == [post]
 
@@ -229,3 +236,44 @@ class TestFilterPosts:
         post = _make_post(created_at=ts)
         result = filter_posts([post], since_hours=48)
         assert result == [post]
+
+    def test_drops_non_english_when_english_only(self):
+        # German — long enough for langdetect to classify reliably, no spaces issue
+        german_text = (
+            "Dies ist ein Beitrag über den Aufbau von lokalen KI-Werkzeugen mit Python "
+            "und DuckDB auf eigener Hardware für Datenschutz und Kontrolle."
+        )
+        post = _make_post(text=german_text)
+        result = filter_posts([post], english_only=True, min_words=0)
+        assert result == []
+
+    def test_keeps_english_when_english_only(self):
+        post = _make_post()  # default is English text
+        result = filter_posts([post], english_only=True)
+        assert result == [post]
+
+    def test_keeps_non_english_when_english_only_false(self):
+        german_text = (
+            "Dies ist ein Beitrag über den Aufbau von lokalen KI-Werkzeugen mit Python "
+            "und DuckDB auf eigener Hardware für Datenschutz und Kontrolle."
+        )
+        post = _make_post(text=german_text)
+        result = filter_posts([post], english_only=False, min_words=0)
+        assert result == [post]
+
+    def test_english_only_calls_is_english_with_post_text(self):
+        post = _make_post(text="word " * 15)
+        with patch("fetcher.is_english", return_value=True) as mock_detect:
+            filter_posts([post], english_only=True)
+        mock_detect.assert_called_once_with(post.text)
+
+    def test_english_only_skips_is_english_when_false(self):
+        post = _make_post(text="word " * 15)
+        with patch("fetcher.is_english") as mock_detect:
+            filter_posts([post], english_only=False)
+        mock_detect.assert_not_called()
+
+    def test_english_only_default_is_true(self):
+        import inspect
+        sig = inspect.signature(filter_posts)
+        assert sig.parameters["english_only"].default is True

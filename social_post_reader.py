@@ -120,6 +120,10 @@ def run(
         bool,
         typer.Option("--no-store", help="Skip writing to SQLite"),
     ] = False,
+    english_only: Annotated[
+        bool,
+        typer.Option("--english-only/--no-english-only", help="Drop non-English posts before scoring"),
+    ] = True,
     no_obsidian: Annotated[
         bool,
         typer.Option("--no-obsidian", help="Skip appending to daily note"),
@@ -139,11 +143,16 @@ def run(
         typer.echo("No posts fetched. Check your keywords and network.")
         raise typer.Exit(0)
 
-    # Age + length pre-filter
+    # Age, length, and language pre-filter
     before = len(all_posts)
-    all_posts = filter_posts(all_posts, since_hours=since_hours, min_words=config.DEFAULT_MIN_WORDS)
+    all_posts = filter_posts(
+        all_posts,
+        since_hours=since_hours,
+        min_words=config.DEFAULT_MIN_WORDS,
+        english_only=english_only,
+    )
     if before != len(all_posts):
-        typer.echo(f"  → {len(all_posts)} remain after age/length filter (dropped {before - len(all_posts)})")
+        typer.echo(f"  → {len(all_posts)} remain after pre-filter (dropped {before - len(all_posts)})")
 
     # Deduplicate against store if enabled
     if not no_store and not dry_run:

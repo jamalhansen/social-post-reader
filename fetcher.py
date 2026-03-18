@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 import requests
+from local_first_common.text import is_english
 
 logger = logging.getLogger(__name__)
 
@@ -260,16 +261,19 @@ def filter_posts(
     posts: list[SocialPost],
     since_hours: int = 48,
     min_words: int = 10,
+    english_only: bool = True,
 ) -> list[SocialPost]:
-    """Drop posts that are too old or too short to be worth scoring.
+    """Drop posts that are too old, too short, or not in English.
 
     Args:
         posts: Posts to filter.
         since_hours: Drop posts older than this many hours. 0 = no age filter.
         min_words: Drop posts with fewer words than this.
+        english_only: Drop posts not detected as English (default True).
 
     Returns:
         Filtered list. Posts with unparseable timestamps are kept (fail open).
+        Language detection also fails open — ambiguous posts are kept.
     """
     now = datetime.now(tz=timezone.utc)
     out: list[SocialPost] = []
@@ -286,6 +290,8 @@ def filter_posts(
                     continue
             except ValueError:
                 pass  # unparseable timestamp — keep the post
+        if english_only and not is_english(post.text):
+            continue
         out.append(post)
     return out
 
