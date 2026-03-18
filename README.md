@@ -113,6 +113,15 @@ uv run social_post_reader.py run --no-store
 
 # Verbose: show score for every post evaluated
 uv run social_post_reader.py run --verbose
+
+# Only consider posts from the last 24 hours (default: 48)
+uv run social_post_reader.py run --since-hours 24
+
+# Cap how many posts get sent to the LLM (default: 100)
+uv run social_post_reader.py run --limit 50
+
+# Include non-English posts (English-only filter is on by default)
+uv run social_post_reader.py run --no-english-only
 ```
 
 ### Review — mark candidates as replied or skipped
@@ -145,6 +154,9 @@ uv run social_post_reader.py status
 | `--model` | `-m` | provider default | Override provider's default model |
 | `--threshold` | `-t` | `0.5` | Minimum score to include (0.0–1.0) |
 | `--max` | | `5` | Maximum candidates in digest |
+| `--since-hours` | | `48` | Drop posts older than N hours (0 = no limit) |
+| `--limit` | `-l` | `100` | Max posts to send to the LLM for scoring |
+| `--english-only/--no-english-only` | | `true` | Drop non-English posts before scoring |
 | `--store` | | `~/.local-first/local-first.db` | SQLite DB path |
 | `--dry-run` | `-n` | false | Print digest; write nothing |
 | `--verbose` | `-v` | false | Show score for every post |
@@ -202,4 +214,4 @@ social-post-reader/
 uv run pytest
 ```
 
-55 tests, no network calls, no real DB.
+70 tests, no network calls, no real DB.
