@@ -26,3 +26,6 @@ uv.toml
 
 # Test cache
 .pytest_cache/
+
+# local-first security requirements
+.DS_Store

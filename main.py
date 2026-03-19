@@ -1,6 +1,4 @@
-def main():
-    print("Hello from social-post-reader!")
-
+from logic import app
 
 if __name__ == "__main__":
-    main()
+    app()
