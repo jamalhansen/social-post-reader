@@ -15,13 +15,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-include = [
-    "social_post_reader.py",
-    "fetcher.py",
-    "scorer.py",
-    "store.py",
-    "config.py",
-]
+packages = ["src"]
 
 [dependency-groups]
 dev = [
@@ -30,7 +24,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = ["src"]
 
 [tool.uv.sources]
 local-first-common = { git = "https://github.com/jamalhansen/local-first-common.git", branch = "main" }

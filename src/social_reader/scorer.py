@@ -24,7 +24,7 @@ import logging
 import time
 from dataclasses import dataclass
 
-from fetcher import SocialPost
+from .fetcher import SocialPost
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,8 @@
 """Tests for store.py — SQLite candidate tracking."""
 
-from fetcher import SocialPost
-from scorer import ScoredPost
-from store import (
+from social_reader.fetcher import SocialPost
+from social_reader.scorer import ScoredPost
+from social_reader.store import (
     get_new_candidates,
     get_status_summary,
     init_db,

@@ -20,10 +20,10 @@ import typer
 from local_first_common.obsidian import append_to_daily_note, get_daily_note_path
 from local_first_common.providers import PROVIDERS
 
-import config
-import store as db_store
-from fetcher import SocialPost, fetch_bluesky_posts, fetch_mastodon_posts, filter_posts
-from scorer import format_digest, score_posts
+from . import config
+from . import store as db_store
+from .fetcher import SocialPost, fetch_bluesky_posts, fetch_mastodon_posts, filter_posts
+from .scorer import format_digest, score_posts
 
 app = typer.Typer(help="Daily digest of social posts worth replying to.")
 

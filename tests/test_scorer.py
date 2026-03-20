@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 import pytest
 
-from fetcher import SocialPost
-from scorer import ScoredPost, _parse_response, format_digest, score_post, score_posts
+from social_reader.fetcher import SocialPost
+from social_reader.scorer import ScoredPost, _parse_response, format_digest, score_post, score_posts
 
 
 def _make_post(
@@ -104,7 +104,7 @@ class TestScorePost:
                     raise RuntimeError("429 Too Many Requests")
                 return '{"score": 0.8, "angle": "mention DuckDB"}'
 
-        with patch("scorer.time.sleep"):
+        with patch("social_reader.scorer.time.sleep"):
             result = score_post(post, "profile", FlakeyProvider())
 
         assert result.score == pytest.approx(0.8)
@@ -117,7 +117,7 @@ class TestScorePost:
             def complete(self, s, u):
                 raise RuntimeError("429 Too Many Requests")
 
-        with patch("scorer.time.sleep"):
+        with patch("social_reader.scorer.time.sleep"):
             result = score_post(post, "profile", AlwaysRateLimited())
 
         assert result.score == 0.0
