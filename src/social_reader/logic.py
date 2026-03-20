@@ -19,6 +19,10 @@ from typing import Annotated
 import typer
 from local_first_common.obsidian import append_to_daily_note, get_daily_note_path
 from local_first_common.providers import PROVIDERS
+from local_first_common.cli import (
+    dry_run_option,
+    no_llm_option,
+)
 
 from . import config
 from . import store as db_store
@@ -30,8 +34,11 @@ app = typer.Typer(help="Daily digest of social posts worth replying to.")
 _VALID_SOURCES = {"bluesky", "mastodon"}
 
 
-def _get_provider(provider_name: str, model: str | None):
+def _get_provider(provider_name: str, model: str | None, no_llm: bool = False):
     """Instantiate and return the requested provider."""
+    if no_llm:
+        from local_first_common.testing import MockProvider
+        return MockProvider()
     if provider_name not in PROVIDERS:
         typer.echo(f"Unknown provider: {provider_name!r}. Valid: {list(PROVIDERS.keys())}", err=True)
         raise typer.Exit(1)
@@ -110,7 +117,11 @@ def run(
     ] = config.STORE_PATH,
     dry_run: Annotated[
         bool,
-        typer.Option("--dry-run", "-n", help="Print digest; write nothing"),
+        dry_run_option(),
+    ] = False,
+    no_llm: Annotated[
+        bool,
+        no_llm_option(),
     ] = False,
     verbose: Annotated[
         bool,
@@ -133,8 +144,11 @@ def run(
     if verbose:
         logging.basicConfig(level=logging.DEBUG)
 
+    if no_llm:
+        dry_run = True
+
     source_list = _parse_sources(sources)
-    llm = _get_provider(provider, model)
+    llm = _get_provider(provider, model, no_llm=no_llm)
 
     today = date.today().isoformat()
     all_posts = _fetch_all_posts(source_list)

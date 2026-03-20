@@ -53,7 +53,7 @@ uv run python src/main.py review
 uv run python src/main.py run --provider anthropic
 
 # Dry run: print candidates without writing to vault
-uv run python src/main.py run --dry-run
+uv run python src/main.py run --dry-run -n: Call LLM but do not save results. Print to stdout.
 ```
 
 ## CLI Reference
