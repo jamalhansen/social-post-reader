@@ -40,178 +40,59 @@ cd social-post-reader
 uv sync
 ```
 
-## Configuration
-
-Copy the example config and edit it:
+## Quick Start
 
 ```bash
-cp .social-post-reader.toml.example ~/.social-post-reader.toml
+# Fetch and score posts (ollama default)
+uv run python src/main.py run
+
+# Review candidates interactively
+uv run python src/main.py review
+
+# Use Anthropic for scoring
+uv run python src/main.py run --provider anthropic
+
+# Dry run: print candidates without writing to vault
+uv run python src/main.py run --dry-run
 ```
 
-`~/.social-post-reader.toml`:
+## CLI Reference
 
-```toml
-[social]
-keywords = ["duckdb", "python", "local ai", "sqlite", "llm", "sql"]
-mastodon_instances = ["mastodon.social", "fosstodon.org"]
-# include_link_posts = false  # set true to include link-sharing posts
+All tools in this series share a common set of CLI flags for model management (`-p`, `-m`, `-n`, `-v`, `-d`) via [local-first-common](https://github.com/jamalhansen/local-first-common).
 
-[profile]
-description = """
-I write and teach SQL, Python, and data engineering for working developers.
-I run the "Vibe Coded and Lived to Tell" blog series about building local-first
-AI tools. My day job involves data pipelines and internal tooling.
-Active series: local-first AI tools, SQL for analysts.
-Interested in: local LLMs, DuckDB, SQLite, teaching pedagogy, developer tooling.
-"""
+### Commands
 
-[settings]
-threshold = 0.5       # minimum score to include (0.0–1.0)
-max_candidates = 5    # candidates per digest
-provider = "local"    # local | anthropic | groq | deepseek
-store = "~/.local-first/social-post-reader.db"
-```
-
-### Environment variables
-
-| Variable | Purpose |
+| Command | Description |
 |---|---|
-| `BLUESKY_HANDLE` | Your Bluesky handle (e.g. `you.bsky.social`) |
-| `BLUESKY_APP_PASSWORD` | App Password from Bluesky Settings → Privacy → App Passwords |
-| `OBSIDIAN_VAULT` | Path to your Obsidian vault (overrides auto-detection) |
-| `MODEL_PROVIDER` | Override default LLM provider |
-| `SOCIAL_POST_READER_STORE` | Override SQLite DB path |
-| `ANTHROPIC_API_KEY` | Anthropic API key |
-| `GROQ_API_KEY` | Groq API key |
-| `DEEPSEEK_API_KEY` | DeepSeek API key |
-| `OLLAMA_HOST` | Ollama server URL (default: `http://localhost:11434`) |
+| `run` | Fetch posts, score them, and write digest |
+| `review` | Interactively mark candidates as replied or skipped |
+| `status` | Show summary of tracked candidates |
 
 ---
 
-## Usage
+## Project Structure
 
-### Run — fetch, score, write digest
-
-```bash
-# Default: both platforms, local Ollama, append to daily note
-uv run social_post_reader.py run
-
-# Dry run — print digest, write nothing
-uv run social_post_reader.py run --dry-run
-
-# Only Bluesky, use Anthropic
-uv run social_post_reader.py run --sources bluesky --provider anthropic
-
-# Adjust threshold and max candidates
-uv run social_post_reader.py run --threshold 0.6 --max 3
-
-# Skip writing to Obsidian (print instead)
-uv run social_post_reader.py run --no-obsidian
-
-# Skip SQLite tracking
-uv run social_post_reader.py run --no-store
-
-# Verbose: show score for every post evaluated
-uv run social_post_reader.py run --verbose
-
-# Only consider posts from the last 24 hours (default: 48)
-uv run social_post_reader.py run --since-hours 24
-
-# Cap how many posts get sent to the LLM (default: 100)
-uv run social_post_reader.py run --limit 50
-
-# Include non-English posts (English-only filter is on by default)
-uv run social_post_reader.py run --no-english-only
-```
-
-### Review — mark candidates as replied or skipped
-
-```bash
-uv run social_post_reader.py review
-
-# Review a specific date
-uv run social_post_reader.py review --date 2026-03-16
-```
-
-At the prompt: `r` = replied, `s` = skip, `q` = quit.
-
-### Status — summary of tracked candidates
-
-```bash
-uv run social_post_reader.py status
-```
-
----
-
-## CLI reference
-
-### `run`
-
-| Option | Short | Default | Description |
-|---|---|---|---|
-| `--sources` | `-s` | `bluesky,mastodon` | Comma-separated sources to fetch |
-| `--provider` | `-p` | `local` | LLM provider for scoring |
-| `--model` | `-m` | provider default | Override provider's default model |
-| `--threshold` | `-t` | `0.5` | Minimum score to include (0.0–1.0) |
-| `--max` | | `5` | Maximum candidates in digest |
-| `--since-hours` | | `48` | Drop posts older than N hours (0 = no limit) |
-| `--limit` | `-l` | `100` | Max posts to send to the LLM for scoring |
-| `--english-only/--no-english-only` | | `true` | Drop non-English posts before scoring |
-| `--store` | | `~/.local-first/local-first.db` | SQLite DB path |
-| `--dry-run` | `-n` | false | Print digest; write nothing |
-| `--verbose` | `-v` | false | Show score for every post |
-| `--no-store` | | false | Skip SQLite tracking |
-| `--no-obsidian` | | false | Skip writing to daily note |
-
-### `review`
-
-| Option | Short | Default | Description |
-|---|---|---|---|
-| `--store` | | default DB | SQLite DB path |
-| `--date` | `-d` | today | Review candidates for a specific date |
-
-### `status`
-
-| Option | Default | Description |
-|---|---|---|
-| `--store` | default DB | SQLite DB path |
-
----
-
-## Scheduling
-
-Run daily at 7 AM before the first nap window:
-
-```bash
-# Add to crontab (crontab -e)
-0 7 * * * cd ~/projects/local-first/social-post-reader && uv run social_post_reader.py run >> ~/.social-post-reader.log 2>&1
-```
-
----
-
-## Project structure
+This tool follows the [Local-First AI project blueprint](https://github.com/jamalhansen/local-first-common).
 
 ```
 social-post-reader/
-  social_post_reader.py   # CLI entrypoint (Typer) — run / review / status
-  fetcher.py              # Bluesky + Mastodon post fetchers → SocialPost
-  scorer.py               # LLM scoring + angle generation → ScoredPost, format_digest
-  store.py                # SQLite tracking — upsert, mark, query
-  config.py               # TOML + env var configuration
-  tests/
-    test_fetcher.py
-    test_scorer.py
-    test_store.py
-    fixtures/
-      sample_bluesky_posts.json
-      sample_mastodon_posts.json
-  .social-post-reader.toml.example
+├── src/
+│   ├── main.py           # Typer CLI entry point
+│   ├── logic.py          # Core triage orchestration
+│   ├── config.py         # Keywords and profile settings
+│   ├── store.py          # SQLite candidate storage
+│   ├── scorer.py         # Prompt building and scoring logic
+│   ├── reader.py         # Bluesky/Mastodon fetcher
+│   ├── output.py         # Obsidian daily note integration
+│   └── display.py        # Rich-based terminal formatting
+├── pyproject.toml        # Managed by uv
+└── tests/
+    ├── test_main.py      # CLI integration tests via MockProvider
+    └── ...
 ```
 
-## Running tests
+## Running Tests
 
 ```bash
 uv run pytest
 ```
-
-70 tests, no network calls, no real DB.
