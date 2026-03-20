@@ -53,7 +53,10 @@ uv run python src/main.py review
 uv run python src/main.py run --provider anthropic
 
 # Dry run: print candidates without writing to vault
-uv run python src/main.py run --dry-run -n: Call LLM but do not save results. Print to stdout.
+uv run python src/main.py run --dry-run
+
+# Skip LLM entirely (for testing CLI args without inference)
+uv run python src/main.py run --no-llm
 ```
 
 ## CLI Reference
