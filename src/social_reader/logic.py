@@ -115,14 +115,8 @@ def run(
         str,
         typer.Option("--store", help="SQLite DB path for tracking"),
     ] = config.STORE_PATH,
-    dry_run: Annotated[
-        bool,
-        dry_run_option(),
-    ] = False,
-    no_llm: Annotated[
-        bool,
-        no_llm_option(),
-    ] = False,
+    dry_run: bool = dry_run_option(),
+    no_llm: bool = no_llm_option(),
     verbose: Annotated[
         bool,
         typer.Option("--verbose", "-v", help="Show score for every post"),
