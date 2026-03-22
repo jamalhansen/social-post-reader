@@ -26,9 +26,11 @@ import time
 from dataclasses import dataclass
 
 from .fetcher import SocialPost
-from local_first_common.tracking import timed_run
+from local_first_common.tracking import register_tool, timed_run
 
 logger = logging.getLogger(__name__)
+
+_TOOL = register_tool("social-post-reader")
 
 _SYSTEM_TEMPLATE = """\
 You score social media posts as reply candidates for a specific person.
