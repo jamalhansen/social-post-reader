@@ -197,7 +197,7 @@ def run(
     if not no_obsidian:
         try:
             vault_path = os.environ.get("OBSIDIAN_VAULT")
-            note_path = get_daily_note_path(vault_root=vault_path)
+            note_path = get_daily_note_path(vault_root=vault_path, note_date=date.today())
             append_to_daily_note(digest, vault_root=vault_path)
             typer.echo(f"Appended digest to {note_path}")
         except Exception as e:
