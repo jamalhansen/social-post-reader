@@ -157,6 +157,8 @@ def score_posts(
             if scored.score >= threshold:
                 results.append(scored)
         _run.item_count = len(posts)
+        _run.input_tokens = getattr(provider, "input_tokens", None) or None
+        _run.output_tokens = getattr(provider, "output_tokens", None) or None
     results.sort(key=lambda s: s.score, reverse=True)
     return results
 
