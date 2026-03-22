@@ -1,5 +1,6 @@
 """Score social posts as reply candidates and generate a personal angle.
 
+
 Each post is sent to an LLM with:
   - A profile describing the user's background, active writing, and expertise
   - The post text and metadata
@@ -25,6 +26,7 @@ import time
 from dataclasses import dataclass
 
 from .fetcher import SocialPost
+from local_first_common.tracking import timed_run
 
 logger = logging.getLogger(__name__)
 
@@ -142,18 +144,19 @@ def score_posts(
         Filtered and sorted list of ScoredPost objects.
     """
     results: list[ScoredPost] = []
-    for post in posts:
-        scored = score_post(post, profile, provider)
-        if verbose:
-            logger.info(
-                "[%.2f] @%s — %s",
-                scored.score,
-                post.author_handle,
-                post.text[:60],
-            )
-        if scored.score >= threshold:
-            results.append(scored)
-
+    with timed_run("social-post-reader", getattr(provider, "model", None)) as _run:
+        for post in posts:
+            scored = score_post(post, profile, provider)
+            if verbose:
+                logger.info(
+                    "[%.2f] @%s — %s",
+                    scored.score,
+                    post.author_handle,
+                    post.text[:60],
+                )
+            if scored.score >= threshold:
+                results.append(scored)
+        _run.item_count = len(posts)
     results.sort(key=lambda s: s.score, reverse=True)
     return results
 
