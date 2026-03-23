@@ -21,34 +21,20 @@ def test_parse_sources_invalid():
         logic._parse_sources("invalid")
 
 
-def test_get_provider_valid():
-    """Correct provider instantiated."""
-    with patch("social_reader.logic.PROVIDERS", {"mock": MagicMock()}):
-        logic._get_provider("mock", "model123")
-        logic.PROVIDERS["mock"].assert_called_once_with(model="model123")
-
-
-def test_get_provider_invalid():
-    """Typer.Exit raised for unknown provider."""
-    with patch("social_reader.logic.PROVIDERS", {"mock": MagicMock()}):
-        with pytest.raises(typer.Exit):
-            logic._get_provider("other", None)
-
-
 @patch("social_reader.logic.fetch_bluesky_posts")
 @patch("social_reader.logic.fetch_mastodon_posts")
 def test_fetch_all_posts(mock_masto, mock_bsky):
     """Posts fetched from specified sources."""
     mock_bsky.return_value = [MagicMock(spec=SocialPost)]
     mock_masto.return_value = [MagicMock(spec=SocialPost)]
-    
+
     res = logic._fetch_all_posts(["bluesky", "mastodon"])
     assert len(res) == 2
     mock_bsky.assert_called_once()
     mock_masto.assert_called_once()
 
 
-@patch("social_reader.logic._get_provider")
+@patch("social_reader.logic.resolve_provider", return_value=MagicMock())
 @patch("social_reader.logic._fetch_all_posts")
 @patch("social_reader.logic.score_posts")
 @patch("social_reader.logic.format_digest")
@@ -58,10 +44,10 @@ def test_run_command_dry_run(mock_init, mock_format, mock_score, mock_fetch, moc
     mock_fetch.return_value = [SocialPost(platform="bluesky", author_handle="u", author_display_name="U", text="Some long post text here", post_url="url", reply_count=0, like_count=0, created_at=date.today().isoformat())]
     mock_score.return_value = []
     mock_format.return_value = "DIGEST_CONTENT"
-    
+
     # Run the command
     logic.run(dry_run=True, no_obsidian=True)
-    
+
     mock_fetch.assert_called_once()
     mock_score.assert_called_once()
     mock_format.assert_called_once()
