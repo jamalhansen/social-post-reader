@@ -20,12 +20,12 @@ score interpretation:
 The angle is a prompt, not a script. It sketches the reply, it doesn't write it.
 """
 
-import json
 import logging
 import time
 from dataclasses import dataclass
 
 from .fetcher import SocialPost
+from local_first_common.llm import parse_json_response, try_xml_parse
 from local_first_common.tracking import register_tool, timed_run
 
 logger = logging.getLogger(__name__)
@@ -116,14 +116,19 @@ def score_post(
 
 
 def _parse_response(raw: str) -> dict:
-    """Parse the LLM response, stripping markdown code fences if present."""
-    text = raw.strip()
-    if text.startswith("```"):
-        lines = text.splitlines()
-        # Drop first and last lines (``` fences)
-        inner = lines[1:-1] if lines[-1].strip() == "```" else lines[1:]
-        text = "\n".join(inner).strip()
-    return json.loads(text)
+    """Parse the LLM response into a score/angle dict.
+
+    Tries JSON first (with automatic fence-stripping), then an XML
+    fallback for local models that struggle with strict JSON syntax.
+    """
+    try:
+        return parse_json_response(raw)
+    except Exception:
+        pass
+    xml = try_xml_parse(raw, ["score", "angle"])
+    if xml:
+        return {"score": xml["score"], "angle": xml.get("angle", "")}
+    raise ValueError(f"Could not parse scorer response: {raw[:200]}")
 
 
 def score_posts(
