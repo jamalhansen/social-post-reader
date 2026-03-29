@@ -42,8 +42,13 @@ uv sync
 
 ## Quick Start
 
+The installed entry point is `social-reader`. After `uv sync`:
+
 ```bash
 # Fetch and score posts (ollama default)
+social-reader run
+
+# Or via uv run:
 uv run python src/main.py run
 
 # Review candidates interactively
