@@ -434,7 +434,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/0e/72/a3add0e4eec4eb9e2
 [[package]]
 name = "local-first-common"
 version = "0.1.0"
-source = { git = "https://github.com/jamalhansen/local-first-common.git?rev=main#caf027d80af14636f05057999c344b4851e4a0f5" }
+source = { git = "https://github.com/jamalhansen/local-first-common.git?rev=main#6ed1d963a18359522a332721d6881c1b1b5447c7" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "duckdb" },
@@ -446,6 +446,11 @@ dependencies = [
     { name = "pyyaml" },
     { name = "requests" },
     { name = "typer" },
+]
+
+[package.optional-dependencies]
+anthropic = [
+    { name = "anthropic" },
 ]
 
 [[package]]
@@ -778,8 +783,7 @@ name = "social-post-reader"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "anthropic" },
-    { name = "local-first-common" },
+    { name = "local-first-common", extra = ["anthropic"] },
     { name = "requests" },
     { name = "typer" },
 ]
@@ -793,8 +797,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "anthropic", specifier = ">=0.86.0" },
-    { name = "local-first-common", git = "https://github.com/jamalhansen/local-first-common.git?rev=main" },
+    { name = "local-first-common", extras = ["anthropic"], git = "https://github.com/jamalhansen/local-first-common.git?rev=main" },
     { name = "requests", specifier = ">=2.32.5" },
     { name = "typer", specifier = ">=0.24.1" },
 ]
