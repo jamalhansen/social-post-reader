@@ -194,7 +194,13 @@ def format_digest(scored_posts: list[ScoredPost], date_str: str, max_posts: int 
         if len(p.text) > 120:
             excerpt += "…"
 
-        lines.append(f"{i}. {handle} ({author}) — [{p.platform}]({p.post_url})")
+        meta = [f"platform: {p.platform}"]
+        if p.search_term:
+            meta.append(f"term: {p.search_term}")
+        meta_str = " | ".join(meta)
+
+        lines.append(f"- {handle} ({author}) — {meta_str}")
+        lines.append(f"   [Source Link]({p.post_url})")
         lines.append(f'   "{excerpt}"')
         if sc.angle:
             lines.append(f"   → Your angle: {sc.angle}")
