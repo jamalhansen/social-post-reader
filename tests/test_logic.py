@@ -71,3 +71,20 @@ def test_status_command(mock_get, mock_init):
     mock_get.return_value = {"new": 5, "replied": 2}
     logic.status()
     mock_get.assert_called_once()
+
+
+@patch("social_reader.logic.db_store.init_db")
+@patch("social_reader.logic.db_store.clear_new_candidates")
+def test_clear_command(mock_clear, mock_init):
+    """Clear command calls clear_new_candidates."""
+    from typer.testing import CliRunner
+    runner = CliRunner()
+    
+    mock_clear.return_value = 10
+    
+    # Use force to skip confirmation
+    result = runner.invoke(logic.app, ["clear", "--force"])
+    
+    assert result.exit_code == 0
+    assert "Done. Cleared 10 candidates." in result.output
+    mock_clear.assert_called_once_with(logic.config.STORE_PATH, None)

@@ -271,5 +271,33 @@ def status(
         typer.echo(f"  {status_name:10} {count}")
 
 
+@app.command()
+def clear(
+    store_path: Annotated[
+        str,
+        typer.Option("--store", help="SQLite DB path"),
+    ] = config.STORE_PATH,
+    date_str: Annotated[
+        str | None,
+        typer.Option("--date", "-d", help="Clear candidates for a specific date (YYYY-MM-DD)"),
+    ] = None,
+    force: Annotated[
+        bool,
+        typer.Option("--force", "-f", help="Skip confirmation prompt"),
+    ] = False,
+) -> None:
+    """Mark all 'new' candidates as 'skipped' to clear the backlog."""
+    db_store.init_db(store_path)
+    
+    target = f"for {date_str}" if date_str else "across all dates"
+    if not force:
+        confirm = typer.confirm(f"Mark all 'new' candidates as 'skipped' {target}?")
+        if not confirm:
+            raise typer.Abort()
+            
+    count = db_store.clear_new_candidates(store_path, date_str)
+    typer.echo(f"Done. Cleared {count} candidates.")
+
+
 if __name__ == "__main__":
     app()

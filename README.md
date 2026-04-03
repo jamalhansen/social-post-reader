@@ -46,22 +46,22 @@ The installed entry point is `social-reader`. After `uv sync`:
 
 ```bash
 # Fetch and score posts (ollama default)
-social-reader run
-
-# Or via uv run:
-uv run python src/main.py run
+uv run social-reader run
 
 # Review candidates interactively
-uv run python src/main.py review
+uv run social-reader review
+
+# Clear the backlog (mark all 'new' as 'skipped')
+uv run social-reader clear
+
+# Show current status summary
+uv run social-reader status
 
 # Use Anthropic for scoring
-uv run python src/main.py run --provider anthropic
+uv run social-reader run --provider anthropic
 
 # Dry run: print candidates without writing to vault
-uv run python src/main.py run --dry-run
-
-# Skip LLM entirely (for testing CLI args without inference)
-uv run python src/main.py run --no-llm
+uv run social-reader run --dry-run
 ```
 
 ## CLI Reference
@@ -75,6 +75,7 @@ All tools in this series share a common set of CLI flags for model management (`
 | `run` | Fetch posts, score them, and write digest |
 | `review` | Interactively mark candidates as replied or skipped |
 | `status` | Show summary of tracked candidates |
+| `clear` | Mark 'new' candidates as 'skipped' |
 
 ---
 

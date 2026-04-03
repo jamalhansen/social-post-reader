@@ -3,6 +3,7 @@
 from social_reader.fetcher import SocialPost
 from social_reader.scorer import ScoredPost
 from social_reader.store import (
+    clear_new_candidates,
     get_new_candidates,
     get_status_summary,
     init_db,
@@ -128,3 +129,31 @@ class TestGetStatusSummary:
         db = str(tmp_path / "test.db")
         init_db(db)
         assert get_status_summary(db) == {}
+
+
+class TestClear:
+    def test_clear_all(self, tmp_path):
+        db_path = str(tmp_path / "test.db")
+        init_db(db_path)
+        upsert_candidate(_make_scored(post_url="https://u1"), "2026-03-17", db_path)
+        upsert_candidate(_make_scored(post_url="https://u2"), "2026-03-18", db_path)
+        
+        count = clear_new_candidates(db_path)
+        assert count == 2
+        
+        summary = get_status_summary(db_path)
+        assert summary.get("new") is None
+        assert summary.get("skipped") == 2
+
+    def test_clear_by_date(self, tmp_path):
+        db_path = str(tmp_path / "test.db")
+        init_db(db_path)
+        upsert_candidate(_make_scored(post_url="https://u1"), "2026-03-17", db_path)
+        upsert_candidate(_make_scored(post_url="https://u2"), "2026-03-18", db_path)
+        
+        count = clear_new_candidates(db_path, date_str="2026-03-17")
+        assert count == 1
+        
+        summary = get_status_summary(db_path)
+        assert summary.get("new") == 1
+        assert summary.get("skipped") == 1

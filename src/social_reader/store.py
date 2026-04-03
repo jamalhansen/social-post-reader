@@ -63,3 +63,20 @@ def get_status_summary(path: str) -> dict[str, int]:
 def is_seen(post_url: str, path: str) -> bool:
     """Return True if the post URL is already in the store."""
     return db.is_seen(path, "candidates", "post_url", post_url)
+
+def clear_new_candidates(path: str, date_str: str | None = None) -> int:
+    """Mark all 'new' candidates as 'skipped'. If date_str is provided, only clear that date."""
+    with db.get_db_cursor(path) as cur:
+        if cur is None:
+            return 0
+        if date_str:
+            cur.execute(
+                "UPDATE candidates SET status = 'skipped' WHERE status = 'new' AND date = ?",
+                (date_str,),
+            )
+        else:
+            cur.execute("UPDATE candidates SET status = 'skipped' WHERE status = 'new'")
+        
+        count = cur.rowcount
+        cur.connection.commit()
+        return count
