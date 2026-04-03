@@ -232,7 +232,12 @@ def review(
 
     replied = skipped = 0
     for row in candidates:
-        typer.echo(f"@{row['author_handle']} [{row['platform']}] — score {row['score']:.2f}")
+        metadata = [f"Platform: {row['platform']}"]
+        if row.get("search_term"):
+            metadata.append(f"Term: {row['search_term']}")
+        metadata.append(f"Score: {row['score']:.2f}")
+        
+        typer.echo(f"@{row['author_handle']} [{'  |  '.join(metadata)}]")
         typer.echo(f"  {row['text'][:120]}")
         if row.get("angle"):
             typer.echo(f"  → {row['angle']}")

@@ -36,6 +36,7 @@ class SocialPost:
     created_at: str  # ISO 8601 string
     has_external_link: bool = False
     tags: list[str] = field(default_factory=list)
+    search_term: str | None = None
 
 
 def fetch_bluesky_posts(
@@ -67,7 +68,13 @@ def fetch_bluesky_posts(
     if handle and app_password:
         token = bluesky.get_auth_token(handle, app_password)
 
-    raw_posts = bluesky.fetch_posts(keywords, token=token, limit=limit_per_keyword)
+    raw_posts = []
+    for keyword in keywords:
+        for post in bluesky.fetch_posts([keyword], token=token, limit=limit_per_keyword):
+            # Attach keyword metadata
+            post["_keyword"] = keyword
+            raw_posts.append(post)
+
     posts: list[SocialPost] = []
 
     for post in raw_posts:
@@ -99,6 +106,7 @@ def fetch_bluesky_posts(
                 created_at=record.get("createdAt", ""),
                 has_external_link=has_link,
                 tags=facet_tags,
+                search_term=post.get("_keyword"),
             )
         )
 
@@ -128,7 +136,13 @@ def fetch_mastodon_posts(
     if not keywords:
         return []
 
-    raw_statuses = mastodon.fetch_posts(keywords, instances=instances, limit=limit_per_tag)
+    raw_statuses = []
+    for keyword in keywords:
+        for status in mastodon.fetch_posts([keyword], instances=instances, limit=limit_per_tag):
+            # Attach keyword metadata
+            status["_keyword"] = keyword
+            raw_statuses.append(status)
+
     posts: list[SocialPost] = []
 
     for status in raw_statuses:
@@ -163,6 +177,7 @@ def fetch_mastodon_posts(
                 created_at=status.get("created_at", ""),
                 has_external_link=has_link,
                 tags=tags,
+                search_term=status.get("_keyword"),
             )
         )
 

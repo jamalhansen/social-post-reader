@@ -14,13 +14,21 @@ CREATE TABLE IF NOT EXISTS candidates (
     angle        TEXT,
     date         TEXT NOT NULL,
     status       TEXT NOT NULL DEFAULT 'new',
-    replied_at   TIMESTAMP
+    replied_at   TIMESTAMP,
+    search_term  TEXT
 );
 """
 
 def init_db(path: str) -> None:
     """Create the candidates table if it doesn't exist."""
     db.init_db(path, _CREATE_TABLE)
+    # Migration: add search_term for existing DBs that predate this column.
+    import sqlite3
+    with sqlite3.connect(path) as conn:
+        try:
+            conn.execute("ALTER TABLE candidates ADD COLUMN search_term TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
 def upsert_candidate(scored: ScoredPost, date: str, path: str) -> None:
     """Insert a scored post; ignore if the URL was already stored."""
@@ -29,10 +37,10 @@ def upsert_candidate(scored: ScoredPost, date: str, path: str) -> None:
         cur.execute(
             """
             INSERT OR IGNORE INTO candidates
-                (platform, author_handle, post_url, text, score, angle, date)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+                (platform, author_handle, post_url, text, score, angle, date, search_term)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (p.platform, p.author_handle, p.post_url, p.text, scored.score, scored.angle, date),
+            (p.platform, p.author_handle, p.post_url, p.text, scored.score, scored.angle, date, p.search_term),
         )
         cur.connection.commit()
 
