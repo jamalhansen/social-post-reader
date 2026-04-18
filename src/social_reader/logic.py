@@ -78,7 +78,7 @@ def run(
         str,
         typer.Option("--sources", "-s", help="Comma-separated: bluesky, mastodon"),
     ] = "bluesky,mastodon",
-    provider: Annotated[
+    provider_name: Annotated[
         str,
         typer.Option("--provider", "-p", help="LLM provider for scoring"),
     ] = config.DEFAULT_PROVIDER,
@@ -106,8 +106,8 @@ def run(
         str,
         typer.Option("--store", help="SQLite DB path for tracking"),
     ] = config.STORE_PATH,
-    dry_run: bool = dry_run_option(),
-    no_llm: bool = no_llm_option(),
+    dry_run: Annotated[bool, dry_run_option()] = False,
+    no_llm: Annotated[bool, no_llm_option()] = False,
     verbose: Annotated[
         bool,
         typer.Option("--verbose", "-v", help="Show score for every post"),
@@ -134,7 +134,7 @@ def run(
     source_list = _parse_sources(sources)
     
     try:
-        llm = resolve_provider(PROVIDERS, provider, model, no_llm=no_llm)
+        llm = resolve_provider(PROVIDERS, provider_name, model, no_llm=no_llm)
     except Exception as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)

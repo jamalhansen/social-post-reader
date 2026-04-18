@@ -37,3 +37,6 @@ uv.toml
 .coverage
 .ruff_cache/
 .venv/
+
+# Workspace standard ignores
+__pycache__
