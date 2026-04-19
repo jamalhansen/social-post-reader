@@ -33,6 +33,15 @@ from .scorer import format_digest, score_posts
 
 app = typer.Typer(help="Daily digest of social posts worth replying to.")
 
+
+class SocialReaderError(Exception):
+    """Base typed error for social-post-reader."""
+
+
+class ProviderSetupError(SocialReaderError):
+    """Raised when provider resolution fails."""
+
+
 _VALID_SOURCES = {"bluesky", "mastodon"}
 
 
@@ -96,7 +105,9 @@ def run(
     ] = config.DEFAULT_MAX_CANDIDATES,
     since_hours: Annotated[
         int,
-        typer.Option("--since-hours", help="Ignore posts older than N hours (0 = no limit)"),
+        typer.Option(
+            "--since-hours", help="Ignore posts older than N hours (0 = no limit)"
+        ),
     ] = config.DEFAULT_SINCE_HOURS,
     score_limit: Annotated[
         int,
@@ -118,7 +129,10 @@ def run(
     ] = False,
     english_only: Annotated[
         bool,
-        typer.Option("--english-only/--no-english-only", help="Drop non-English posts before scoring"),
+        typer.Option(
+            "--english-only/--no-english-only",
+            help="Drop non-English posts before scoring",
+        ),
     ] = True,
     no_obsidian: Annotated[
         bool,
@@ -132,9 +146,12 @@ def run(
     dry_run = resolve_dry_run(dry_run, no_llm)
 
     source_list = _parse_sources(sources)
-    
+
     try:
         llm = resolve_provider(PROVIDERS, provider_name, model, no_llm=no_llm)
+    except ProviderSetupError as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1)
     except Exception as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
@@ -155,24 +172,32 @@ def run(
         english_only=english_only,
     )
     if before != len(all_posts):
-        typer.echo(f"  → {len(all_posts)} remain after pre-filter (dropped {before - len(all_posts)})")
+        typer.echo(
+            f"  → {len(all_posts)} remain after pre-filter (dropped {before - len(all_posts)})"
+        )
 
     # Deduplicate against store if enabled
     if not no_store and not dry_run:
         db_store.init_db(store_path)
         unseen = [p for p in all_posts if not db_store.is_seen(p.post_url, store_path)]
-        typer.echo(f"  → {len(unseen)} unseen (skipping {len(all_posts) - len(unseen)} already stored)")
+        typer.echo(
+            f"  → {len(unseen)} unseen (skipping {len(all_posts) - len(unseen)} already stored)"
+        )
         all_posts = unseen
 
     # Cap before scoring: sort by engagement (reply + like) so we send the most active posts
     if score_limit and len(all_posts) > score_limit:
         all_posts.sort(key=lambda p: p.reply_count + p.like_count, reverse=True)
-        typer.echo(f"  → Capped at {score_limit} posts for scoring (sorted by engagement)")
+        typer.echo(
+            f"  → Capped at {score_limit} posts for scoring (sorted by engagement)"
+        )
         all_posts = all_posts[:score_limit]
 
     typer.echo(f"Scoring {len(all_posts)} posts...")
 
-    scored = score_posts(all_posts, config.PROFILE, llm, threshold=threshold, verbose=verbose)
+    scored = score_posts(
+        all_posts, config.PROFILE, llm, threshold=threshold, verbose=verbose
+    )
     typer.echo(f"Found {len(scored)} candidates above threshold {threshold}")
 
     digest = format_digest(scored, today, max_posts=max_candidates)
@@ -186,13 +211,17 @@ def run(
     if not no_store:
         for sc in scored:
             db_store.upsert_candidate(sc, today, store_path)
-        typer.echo(f"Stored {min(len(scored), max_candidates)} candidates in {store_path}")
+        typer.echo(
+            f"Stored {min(len(scored), max_candidates)} candidates in {store_path}"
+        )
 
     # Append to daily note
     if not no_obsidian:
         try:
             vault_path = os.environ.get("OBSIDIAN_VAULT")
-            note_path = get_daily_note_path(vault_root=vault_path, note_date=date.today())
+            note_path = get_daily_note_path(
+                vault_root=vault_path, note_date=date.today()
+            )
             append_to_daily_note(digest, vault_root=vault_path)
             typer.echo(f"Appended digest to {note_path}")
         except Exception as e:
@@ -216,7 +245,9 @@ def review(
     ] = config.STORE_PATH,
     date_str: Annotated[
         str | None,
-        typer.Option("--date", "-d", help="Review candidates for a specific date (YYYY-MM-DD)"),
+        typer.Option(
+            "--date", "-d", help="Review candidates for a specific date (YYYY-MM-DD)"
+        ),
     ] = None,
 ) -> None:
     """Interactively mark candidates as replied or skipped."""
@@ -236,7 +267,7 @@ def review(
         if row.get("search_term"):
             metadata.append(f"Term: {row['search_term']}")
         metadata.append(f"Score: {row['score']:.2f}")
-        
+
         typer.echo(f"@{row['author_handle']} [{'  |  '.join(metadata)}]")
         typer.echo(f"  {row['text'][:120]}")
         if row.get("angle"):
@@ -284,7 +315,9 @@ def clear(
     ] = config.STORE_PATH,
     date_str: Annotated[
         str | None,
-        typer.Option("--date", "-d", help="Clear candidates for a specific date (YYYY-MM-DD)"),
+        typer.Option(
+            "--date", "-d", help="Clear candidates for a specific date (YYYY-MM-DD)"
+        ),
     ] = None,
     force: Annotated[
         bool,
@@ -293,13 +326,13 @@ def clear(
 ) -> None:
     """Mark all 'new' candidates as 'skipped' to clear the backlog."""
     db_store.init_db(store_path)
-    
+
     target = f"for {date_str}" if date_str else "across all dates"
     if not force:
         confirm = typer.confirm(f"Mark all 'new' candidates as 'skipped' {target}?")
         if not confirm:
             raise typer.Abort()
-            
+
     count = db_store.clear_new_candidates(store_path, date_str)
     typer.echo(f"Done. Cleared {count} candidates.")
 

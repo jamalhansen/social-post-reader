@@ -32,6 +32,11 @@ logger = logging.getLogger(__name__)
 
 _TOOL = register_tool("social-post-reader")
 
+
+class ScoringError(Exception):
+    """Raised when a post cannot be scored after all retries."""
+
+
 _SYSTEM_TEMPLATE = """\
 You score social media posts as reply candidates for a specific person.
 
@@ -106,8 +111,12 @@ def score_post(
         except Exception as e:
             msg = str(e)
             if "429" in msg and attempt < 3:
-                wait = 2 ** attempt  # 1s, 2s, 4s
-                logger.warning("Rate limited — waiting %ds before retry (attempt %d/3)", wait, attempt + 1)
+                wait = 2**attempt  # 1s, 2s, 4s
+                logger.warning(
+                    "Rate limited — waiting %ds before retry (attempt %d/3)",
+                    wait,
+                    attempt + 1,
+                )
                 time.sleep(wait)
                 continue
             logger.warning("Scoring failed for post by %s: %s", post.author_handle, e)
@@ -170,7 +179,9 @@ def score_posts(
     return results
 
 
-def format_digest(scored_posts: list[ScoredPost], date_str: str, max_posts: int = 5) -> str:
+def format_digest(
+    scored_posts: list[ScoredPost], date_str: str, max_posts: int = 5
+) -> str:
     """Format scored posts as a Markdown reply-candidates digest block.
 
     Args:

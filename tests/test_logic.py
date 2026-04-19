@@ -7,6 +7,16 @@ import pytest
 import typer
 from social_reader import logic
 from social_reader.fetcher import SocialPost
+from social_reader.logic import SocialReaderError, ProviderSetupError
+
+
+class TestTypedErrors:
+    def test_error_hierarchy(self):
+        assert issubclass(ProviderSetupError, SocialReaderError)
+
+    def test_provider_setup_error_message(self):
+        err = ProviderSetupError("bad provider")
+        assert "bad provider" in str(err)
 
 
 def test_parse_sources_valid():
