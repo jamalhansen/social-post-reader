@@ -51,7 +51,18 @@ def test_fetch_all_posts(mock_masto, mock_bsky):
 @patch("social_reader.logic.db_store.init_db")
 def test_run_command_dry_run(mock_init, mock_format, mock_score, mock_fetch, mock_prov):
     """Dry run prints digest without writing."""
-    mock_fetch.return_value = [SocialPost(platform="bluesky", author_handle="u", author_display_name="U", text="Some long post text here", post_url="url", reply_count=0, like_count=0, created_at=date.today().isoformat())]
+    mock_fetch.return_value = [
+        SocialPost(
+            platform="bluesky",
+            author_handle="u",
+            author_display_name="U",
+            text="Some long post text here",
+            post_url="url",
+            reply_count=0,
+            like_count=0,
+            created_at=date.today().isoformat(),
+        )
+    ]
     mock_score.return_value = []
     mock_format.return_value = "DIGEST_CONTENT"
 
@@ -88,13 +99,14 @@ def test_status_command(mock_get, mock_init):
 def test_clear_command(mock_clear, mock_init):
     """Clear command calls clear_new_candidates."""
     from typer.testing import CliRunner
+
     runner = CliRunner()
-    
+
     mock_clear.return_value = 10
-    
+
     # Use force to skip confirmation
     result = runner.invoke(logic.app, ["clear", "--force"])
-    
+
     assert result.exit_code == 0
     assert "Done. Cleared 10 candidates." in result.output
     mock_clear.assert_called_once_with(logic.config.STORE_PATH, None)
