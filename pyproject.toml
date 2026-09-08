@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-social-reader = "social_reader.logic:app"
+social-reader = "social_reader.cli:app"
 
 [build-system]
 requires = ["hatchling"]

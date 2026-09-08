@@ -31,8 +31,8 @@ def test_parse_sources_invalid():
         logic._parse_sources("invalid")
 
 
-@patch("social_reader.logic.fetch_bluesky_posts")
-@patch("social_reader.logic.fetch_mastodon_posts")
+@patch("social_reader.core.fetch_bluesky_posts")
+@patch("social_reader.core.fetch_mastodon_posts")
 def test_fetch_all_posts(mock_masto, mock_bsky):
     """Posts fetched from specified sources."""
     mock_bsky.return_value = [MagicMock(spec=SocialPost)]
@@ -44,11 +44,11 @@ def test_fetch_all_posts(mock_masto, mock_bsky):
     mock_masto.assert_called_once()
 
 
-@patch("social_reader.logic.resolve_provider", return_value=MagicMock())
-@patch("social_reader.logic._fetch_all_posts")
-@patch("social_reader.logic.score_posts")
-@patch("social_reader.logic.format_digest")
-@patch("social_reader.logic.db_store.init_db")
+@patch("social_reader.cli.resolve_provider", return_value=MagicMock())
+@patch("social_reader.cli._fetch_all_posts")
+@patch("social_reader.cli.score_posts")
+@patch("social_reader.cli.format_digest")
+@patch("social_reader.cli.db_store.init_db")
 def test_run_command_dry_run(mock_init, mock_format, mock_score, mock_fetch, mock_prov):
     """Dry run prints digest without writing."""
     mock_fetch.return_value = [
@@ -74,8 +74,8 @@ def test_run_command_dry_run(mock_init, mock_format, mock_score, mock_fetch, moc
     mock_format.assert_called_once()
 
 
-@patch("social_reader.logic.db_store.init_db")
-@patch("social_reader.logic.db_store.get_new_candidates")
+@patch("social_reader.cli.db_store.init_db")
+@patch("social_reader.cli.db_store.get_new_candidates")
 @patch("typer.prompt")
 def test_review_command_empty(mock_prompt, mock_get, mock_init):
     """Review command handles no candidates."""
@@ -85,8 +85,8 @@ def test_review_command_empty(mock_prompt, mock_get, mock_init):
     mock_prompt.assert_not_called()
 
 
-@patch("social_reader.logic.db_store.init_db")
-@patch("social_reader.logic.db_store.get_status_summary")
+@patch("social_reader.cli.db_store.init_db")
+@patch("social_reader.cli.db_store.get_status_summary")
 def test_status_command(mock_get, mock_init):
     """Status command shows summary."""
     mock_get.return_value = {"new": 5, "replied": 2}
@@ -94,8 +94,8 @@ def test_status_command(mock_get, mock_init):
     mock_get.assert_called_once()
 
 
-@patch("social_reader.logic.db_store.init_db")
-@patch("social_reader.logic.db_store.clear_new_candidates")
+@patch("social_reader.cli.db_store.init_db")
+@patch("social_reader.cli.db_store.clear_new_candidates")
 def test_clear_command(mock_clear, mock_init):
     """Clear command calls clear_new_candidates."""
     from typer.testing import CliRunner
