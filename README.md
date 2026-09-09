@@ -86,8 +86,8 @@ This tool follows the [Local-First AI project blueprint](https://github.com/jama
 ```
 social-post-reader/
 ├── src/
-│   ├── main.py           # Typer CLI entry point
-│   ├── logic.py          # Core triage orchestration
+│   ├── cli.py            # Typer CLI entry point
+│   ├── core.py           # Core triage orchestration
 │   ├── config.py         # Keywords and profile settings
 │   ├── store.py          # SQLite candidate storage
 │   ├── scorer.py         # Prompt building and scoring logic
