@@ -14,10 +14,10 @@ Mastodon:
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-from local_first_common.text import is_english, strip_html
 from local_first_common.social import bluesky, mastodon
+from local_first_common.text import is_english, strip_html
 
 logger = logging.getLogger(__name__)
 
@@ -202,16 +202,14 @@ def filter_posts(
         Filtered list. Posts with unparseable timestamps are kept (fail open).
         Language detection also fails open — ambiguous posts are kept.
     """
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     out: list[SocialPost] = []
     for post in posts:
         if min_words and len(post.text.split()) < min_words:
             continue
         if since_hours and post.created_at:
             try:
-                created = datetime.fromisoformat(
-                    post.created_at.replace("Z", "+00:00")
-                )
+                created = datetime.fromisoformat(post.created_at)
                 age_hours = (now - created).total_seconds() / 3600
                 if age_hours > since_hours:
                     continue

@@ -30,7 +30,6 @@ import os
 import tomllib
 from pathlib import Path
 
-
 _CONFIG_FILE = Path.home() / ".social-post-reader.toml"
 
 

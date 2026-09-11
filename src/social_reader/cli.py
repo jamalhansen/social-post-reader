@@ -13,28 +13,28 @@ Usage:
 
 import logging
 import os
-from datetime import date
+from datetime import datetime
 from typing import Annotated
 
 import typer
-from local_first_common.obsidian import append_to_daily_note, get_daily_note_path
-from local_first_common.providers import PROVIDERS
 from local_first_common.cli import (
     dry_run_option,
     no_llm_option,
     resolve_dry_run,
     resolve_provider,
 )
+from local_first_common.obsidian import append_to_daily_note, get_daily_note_path
+from local_first_common.providers import PROVIDERS
 
 from . import config
 from . import store as db_store
-from .fetcher import filter_posts
-from .scorer import format_digest, score_posts
 from .core import (
     ProviderSetupError,
-    _parse_sources,
     _fetch_all_posts,
+    _parse_sources,
 )
+from .fetcher import filter_posts
+from .scorer import format_digest, score_posts
 
 app = typer.Typer(help="Daily digest of social posts worth replying to.")
 
@@ -110,11 +110,11 @@ def run(
     except ProviderSetupError as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - top-level CLI boundary: report cleanly and exit, don't show a raw traceback
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
 
-    today = date.today().isoformat()
+    today = datetime.now().astimezone().date().isoformat()
     all_posts = _fetch_all_posts(source_list)
 
     if not all_posts:
@@ -178,11 +178,11 @@ def run(
         try:
             vault_path = os.environ.get("OBSIDIAN_VAULT")
             note_path = get_daily_note_path(
-                vault_root=vault_path, note_date=date.today()
+                vault_root=vault_path, note_date=datetime.now().astimezone().date()
             )
             append_to_daily_note(digest, vault_root=vault_path)
             typer.echo(f"Appended digest to {note_path}")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - the digest is still printed below either way; a write failure should degrade, not crash after the real work (fetch+score) already succeeded
             typer.echo(f"Warning: could not write to daily note: {e}", err=True)
             typer.echo(digest)
     else:
@@ -210,7 +210,7 @@ def review(
 ) -> None:
     """Interactively mark candidates as replied or skipped."""
     db_store.init_db(store_path)
-    today = date_str or date.today().isoformat()
+    today = date_str or datetime.now().astimezone().date().isoformat()
     candidates = db_store.get_new_candidates(today, store_path)
 
     if not candidates:

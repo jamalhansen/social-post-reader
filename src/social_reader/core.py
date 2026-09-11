@@ -1,4 +1,4 @@
-from typing import List
+
 import typer
 
 from . import config
@@ -16,7 +16,7 @@ class ProviderSetupError(SocialReaderError):
 _VALID_SOURCES = {"bluesky", "mastodon"}
 
 
-def _parse_sources(sources_str: str) -> List[str]:
+def _parse_sources(sources_str: str) -> list[str]:
     parts = [s.strip().lower() for s in sources_str.split(",") if s.strip()]
     unknown = set(parts) - _VALID_SOURCES
     if unknown:
@@ -25,8 +25,8 @@ def _parse_sources(sources_str: str) -> List[str]:
     return parts
 
 
-def _fetch_all_posts(sources: List[str]) -> List[SocialPost]:
-    posts: List[SocialPost] = []
+def _fetch_all_posts(sources: list[str]) -> list[SocialPost]:
+    posts: list[SocialPost] = []
 
     if "bluesky" in sources:
         typer.echo(f"Fetching Bluesky posts for {len(config.KEYWORDS)} keywords...")

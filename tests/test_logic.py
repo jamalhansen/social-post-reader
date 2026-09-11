@@ -1,13 +1,14 @@
 """Tests for logic.py — run command, review command, source parsing, provider resolution."""
 
 from datetime import date
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import typer
+
 from social_reader import logic
 from social_reader.fetcher import SocialPost
-from social_reader.logic import SocialReaderError, ProviderSetupError
+from social_reader.logic import ProviderSetupError, SocialReaderError
 
 
 class TestTypedErrors:
@@ -60,7 +61,7 @@ def test_run_command_dry_run(mock_init, mock_format, mock_score, mock_fetch, moc
             post_url="url",
             reply_count=0,
             like_count=0,
-            created_at=date.today().isoformat(),
+            created_at=date(2026, 6, 1).isoformat(),
         )
     ]
     mock_score.return_value = []

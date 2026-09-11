@@ -5,7 +5,13 @@ from unittest.mock import patch
 import pytest
 
 from social_reader.fetcher import SocialPost
-from social_reader.scorer import ScoredPost, _parse_response, format_digest, score_post, score_posts
+from social_reader.scorer import (
+    ScoredPost,
+    _parse_response,
+    format_digest,
+    score_post,
+    score_posts,
+)
 
 
 def _make_post(
@@ -53,7 +59,7 @@ class TestParseResponse:
         assert result["score"] == 0.5
 
     def test_raises_on_invalid_json(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError, match="Could not parse scorer response"):
             _parse_response("not json")
 
 

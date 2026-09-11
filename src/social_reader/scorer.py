@@ -24,9 +24,10 @@ import logging
 import time
 from dataclasses import dataclass
 
-from .fetcher import SocialPost
 from local_first_common.llm import parse_json_response, try_xml_parse
 from local_first_common.tracking import register_tool, timed_run
+
+from .fetcher import SocialPost
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +109,7 @@ def score_post(
             if score < 0.4:
                 angle = ""
             return ScoredPost(post=post, score=score, angle=angle)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - the provider call's exact exception surface isn't ours to couple to; rate-limit detection below is string-based on purpose
             msg = str(e)
             if "429" in msg and attempt < 3:
                 wait = 2**attempt  # 1s, 2s, 4s
@@ -132,8 +133,8 @@ def _parse_response(raw: str) -> dict:
     """
     try:
         return parse_json_response(raw)
-    except Exception:
-        pass
+    except Exception as e:  # noqa: BLE001 - JSON is tried first, XML is the expected fallback for models that don't follow strict JSON; log at debug since this path is routine, not exceptional
+        logger.debug("JSON parse failed, trying XML fallback: %s", e)
     xml = try_xml_parse(raw, ["score", "angle"])
     if xml:
         return {"score": xml["score"], "angle": xml.get("angle", "")}

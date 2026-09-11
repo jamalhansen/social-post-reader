@@ -1,9 +1,14 @@
 """Tests for fetcher.py — fetch_bluesky_posts, fetch_mastodon_posts, filter_posts."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
-from social_reader.fetcher import SocialPost, fetch_bluesky_posts, fetch_mastodon_posts, filter_posts
+from social_reader.fetcher import (
+    SocialPost,
+    fetch_bluesky_posts,
+    fetch_mastodon_posts,
+    filter_posts,
+)
 
 
 def _make_post(
@@ -14,7 +19,7 @@ def _make_post(
     tags=None,
 ) -> SocialPost:
     if created_at is None:
-        created_at = datetime.now(tz=timezone.utc).isoformat()
+        created_at = datetime.now(tz=UTC).isoformat()
     return SocialPost(
         platform=platform,
         author_handle="user.bsky.social",
@@ -33,7 +38,7 @@ def _bsky_raw_post(text="Hello DuckDB", has_embed=False, tags=None):
     """Build a raw Bluesky API post dict."""
     record = {
         "text": text,
-        "createdAt": datetime.now(tz=timezone.utc).isoformat(),
+        "createdAt": datetime.now(tz=UTC).isoformat(),
         "facets": [],
     }
     if tags:
@@ -58,7 +63,7 @@ def _mastodon_raw_status(text="<p>Hello DuckDB from Mastodon</p>", has_card=Fals
         "url": "https://mastodon.social/@user/123",
         "content": text,
         "account": {"acct": "user", "display_name": "Masto User"},
-        "created_at": datetime.now(tz=timezone.utc).isoformat(),
+        "created_at": datetime.now(tz=UTC).isoformat(),
         "replies_count": 0,
         "favourites_count": 3,
         "tags": [{"name": "duckdb"}],
@@ -216,13 +221,13 @@ class TestFilterPosts:
         assert len(result) == 1
 
     def test_drops_posts_older_than_since_hours(self):
-        old_time = datetime.now(tz=timezone.utc) - timedelta(hours=100)
+        old_time = datetime.now(tz=UTC) - timedelta(hours=100)
         post = _make_post(created_at=old_time.isoformat())
         result = filter_posts([post], since_hours=48)
         assert result == []
 
     def test_keeps_posts_within_since_hours(self):
-        recent_time = datetime.now(tz=timezone.utc) - timedelta(hours=10)
+        recent_time = datetime.now(tz=UTC) - timedelta(hours=10)
         post = _make_post(created_at=recent_time.isoformat())
         result = filter_posts([post], since_hours=48)
         assert len(result) == 1
@@ -233,13 +238,13 @@ class TestFilterPosts:
         assert len(result) == 1  # fail open
 
     def test_no_age_filter_when_since_hours_zero(self):
-        old_time = datetime.now(tz=timezone.utc) - timedelta(days=365)
+        old_time = datetime.now(tz=UTC) - timedelta(days=365)
         post = _make_post(created_at=old_time.isoformat())
         result = filter_posts([post], since_hours=0)
         assert len(result) == 1
 
     def test_z_suffix_timestamp_handled(self):
-        recent = (datetime.now(tz=timezone.utc) - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        recent = (datetime.now(tz=UTC) - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
         post = _make_post(created_at=recent)
         result = filter_posts([post], since_hours=48)
         assert len(result) == 1

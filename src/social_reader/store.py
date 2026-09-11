@@ -1,6 +1,7 @@
 """SQLite store for tracking reply candidates."""
 
 from local_first_common import db
+
 from .scorer import ScoredPost
 
 _CREATE_TABLE = """
