@@ -25,13 +25,11 @@ import time
 from dataclasses import dataclass
 
 from local_first_common.llm import parse_json_response, try_xml_parse
-from local_first_common.tracking import register_tool, timed_run
+from local_first_common.tracking import timed_run
 
 from .fetcher import SocialPost
 
 logger = logging.getLogger(__name__)
-
-_TOOL = register_tool("social-post-reader")
 
 
 class ScoringError(Exception):

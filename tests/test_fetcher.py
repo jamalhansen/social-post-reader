@@ -128,7 +128,8 @@ class TestFetchBlueSkyPosts:
             patch("social_reader.fetcher.bluesky.fetch_posts", return_value=[]),
         ):
             fetch_bluesky_posts(["python"], handle="me.bsky.social", app_password="secret")
-        mock_auth.assert_called_once_with("me.bsky.social", "secret")
+        mock_auth.assert_called_once()
+        assert mock_auth.call_args.args == ("me.bsky.social", "secret")
 
     def test_skips_auth_without_credentials(self):
         with (

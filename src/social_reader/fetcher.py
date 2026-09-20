@@ -18,8 +18,11 @@ from datetime import UTC, datetime
 
 from local_first_common.social import bluesky, mastodon
 from local_first_common.text import is_english, strip_html
+from local_first_common.tracking import register_tool
 
 logger = logging.getLogger(__name__)
+
+_TOOL = register_tool("social-post-reader")
 
 
 @dataclass
@@ -66,11 +69,11 @@ def fetch_bluesky_posts(
 
     token = None
     if handle and app_password:
-        token = bluesky.get_auth_token(handle, app_password)
+        token = bluesky.get_auth_token(handle, app_password, tool=_TOOL)
 
     raw_posts = []
     for keyword in keywords:
-        for post in bluesky.fetch_posts([keyword], token=token, limit=limit_per_keyword):
+        for post in bluesky.fetch_posts([keyword], token=token, limit=limit_per_keyword, tool=_TOOL):
             # Attach keyword metadata
             post["_keyword"] = keyword
             raw_posts.append(post)
@@ -138,7 +141,9 @@ def fetch_mastodon_posts(
 
     raw_statuses = []
     for keyword in keywords:
-        for status in mastodon.fetch_posts([keyword], instances=instances, limit=limit_per_tag):
+        for status in mastodon.fetch_posts(
+            [keyword], instances=instances, limit=limit_per_tag, tool=_TOOL
+        ):
             # Attach keyword metadata
             status["_keyword"] = keyword
             raw_statuses.append(status)
