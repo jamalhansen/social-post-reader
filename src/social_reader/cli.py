@@ -106,7 +106,7 @@ def run(
     source_list = _parse_sources(sources)
 
     try:
-        llm = resolve_provider(PROVIDERS, provider_name, model, no_llm=no_llm)
+        llm = resolve_provider(PROVIDERS, provider_name, model, no_llm=no_llm, tool_name="social-post-reader")
     except ProviderSetupError as e:
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1)
