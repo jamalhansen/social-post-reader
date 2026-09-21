@@ -25,7 +25,6 @@ import time
 from dataclasses import dataclass
 
 from local_first_common.llm import parse_json_response, try_xml_parse
-from local_first_common.tracking import timed_run
 
 from .fetcher import SocialPost
 
@@ -97,6 +96,8 @@ def score_post(
         text=post.text[:1000],  # cap to avoid blowing context on long posts
     )
 
+    provider.source_location = post.post_url
+    provider.item_count = 1
     for attempt in range(4):
         try:
             raw = provider.complete(system, user)
@@ -159,21 +160,17 @@ def score_posts(
         Filtered and sorted list of ScoredPost objects.
     """
     results: list[ScoredPost] = []
-    with timed_run("social-post-reader", getattr(provider, "model", None)) as _run:
-        for post in posts:
-            scored = score_post(post, profile, provider)
-            if verbose:
-                logger.info(
-                    "[%.2f] @%s — %s",
-                    scored.score,
-                    post.author_handle,
-                    post.text[:60],
-                )
-            if scored.score >= threshold:
-                results.append(scored)
-        _run.item_count = len(posts)
-        _run.input_tokens = getattr(provider, "input_tokens", None) or None
-        _run.output_tokens = getattr(provider, "output_tokens", None) or None
+    for post in posts:
+        scored = score_post(post, profile, provider)
+        if verbose:
+            logger.info(
+                "[%.2f] @%s — %s",
+                scored.score,
+                post.author_handle,
+                post.text[:60],
+            )
+        if scored.score >= threshold:
+            results.append(scored)
     results.sort(key=lambda s: s.score, reverse=True)
     return results
 
