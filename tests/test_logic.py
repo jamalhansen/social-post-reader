@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 import typer
 
-from social_reader import logic
+from social_reader import cli, core
+from social_reader.core import ProviderSetupError, SocialReaderError
 from social_reader.fetcher import SocialPost
-from social_reader.logic import ProviderSetupError, SocialReaderError
 
 
 class TestTypedErrors:
@@ -22,14 +22,14 @@ class TestTypedErrors:
 
 def test_parse_sources_valid():
     """Valid sources parsed correctly."""
-    assert logic._parse_sources("bluesky,mastodon") == ["bluesky", "mastodon"]
-    assert logic._parse_sources("bluesky") == ["bluesky"]
+    assert core._parse_sources("bluesky,mastodon") == ["bluesky", "mastodon"]
+    assert core._parse_sources("bluesky") == ["bluesky"]
 
 
 def test_parse_sources_invalid():
     """Typer.Exit raised for unknown sources."""
     with pytest.raises(typer.Exit):
-        logic._parse_sources("invalid")
+        core._parse_sources("invalid")
 
 
 @patch("social_reader.core.fetch_bluesky_posts")
@@ -39,7 +39,7 @@ def test_fetch_all_posts(mock_masto, mock_bsky):
     mock_bsky.return_value = [MagicMock(spec=SocialPost)]
     mock_masto.return_value = [MagicMock(spec=SocialPost)]
 
-    res = logic._fetch_all_posts(["bluesky", "mastodon"])
+    res = core._fetch_all_posts(["bluesky", "mastodon"])
     assert len(res) == 2
     mock_bsky.assert_called_once()
     mock_masto.assert_called_once()
@@ -68,7 +68,7 @@ def test_run_command_dry_run(mock_init, mock_format, mock_score, mock_fetch, moc
     mock_format.return_value = "DIGEST_CONTENT"
 
     # Run the command
-    logic.run(dry_run=True, no_obsidian=True)
+    cli.run(dry_run=True, no_obsidian=True)
 
     mock_fetch.assert_called_once()
     mock_score.assert_called_once()
@@ -82,7 +82,7 @@ def test_review_command_empty(mock_prompt, mock_get, mock_init):
     """Review command handles no candidates."""
     mock_get.return_value = []
     with pytest.raises(typer.Exit):
-        logic.review()
+        cli.review()
     mock_prompt.assert_not_called()
 
 
@@ -91,7 +91,7 @@ def test_review_command_empty(mock_prompt, mock_get, mock_init):
 def test_status_command(mock_get, mock_init):
     """Status command shows summary."""
     mock_get.return_value = {"new": 5, "replied": 2}
-    logic.status()
+    cli.status()
     mock_get.assert_called_once()
 
 
@@ -106,8 +106,8 @@ def test_clear_command(mock_clear, mock_init):
     mock_clear.return_value = 10
 
     # Use force to skip confirmation
-    result = runner.invoke(logic.app, ["clear", "--force"])
+    result = runner.invoke(cli.app, ["clear", "--force"])
 
     assert result.exit_code == 0
     assert "Done. Cleared 10 candidates." in result.output
-    mock_clear.assert_called_once_with(logic.config.STORE_PATH, None)
+    mock_clear.assert_called_once_with(core.config.STORE_PATH, None)
