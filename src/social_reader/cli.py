@@ -109,10 +109,10 @@ def run(
         llm = resolve_provider(PROVIDERS, provider_name, model, no_llm=no_llm, tool_name="social-post-reader")
     except ProviderSetupError as e:
         typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
     except Exception as e:  # noqa: BLE001 - top-level CLI boundary: report cleanly and exit, don't show a raw traceback
         typer.echo(f"Error: {e}", err=True)
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None
 
     today = datetime.now().astimezone().date().isoformat()
     all_posts = _fetch_all_posts(source_list)
