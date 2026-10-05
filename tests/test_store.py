@@ -36,6 +36,7 @@ class TestInitDb:
         db = str(tmp_path / "test.db")
         init_db(db)
         import sqlite3
+
         with sqlite3.connect(db) as conn:
             tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
         assert "candidates" in tables
@@ -137,10 +138,10 @@ class TestClear:
         init_db(db_path)
         upsert_candidate(_make_scored(post_url="https://u1"), "2026-03-17", db_path)
         upsert_candidate(_make_scored(post_url="https://u2"), "2026-03-18", db_path)
-        
+
         count = clear_new_candidates(db_path)
         assert count == 2
-        
+
         summary = get_status_summary(db_path)
         assert summary.get("new") is None
         assert summary.get("skipped") == 2
@@ -150,10 +151,10 @@ class TestClear:
         init_db(db_path)
         upsert_candidate(_make_scored(post_url="https://u1"), "2026-03-17", db_path)
         upsert_candidate(_make_scored(post_url="https://u2"), "2026-03-18", db_path)
-        
+
         count = clear_new_candidates(db_path, date_str="2026-03-17")
         assert count == 1
-        
+
         summary = get_status_summary(db_path)
         assert summary.get("new") == 1
         assert summary.get("skipped") == 1

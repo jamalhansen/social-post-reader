@@ -20,16 +20,19 @@ CREATE TABLE IF NOT EXISTS candidates (
 );
 """
 
+
 def init_db(path: str) -> None:
     """Create the candidates table if it doesn't exist."""
     db.init_db(path, _CREATE_TABLE)
     # Migration: add search_term for existing DBs that predate this column.
     import sqlite3
+
     with sqlite3.connect(path) as conn:
         try:
             conn.execute("ALTER TABLE candidates ADD COLUMN search_term TEXT")
         except sqlite3.OperationalError:
             pass  # column already exists
+
 
 def upsert_candidate(scored: ScoredPost, date: str, path: str) -> None:
     """Insert a scored post; ignore if the URL was already stored."""
@@ -45,6 +48,7 @@ def upsert_candidate(scored: ScoredPost, date: str, path: str) -> None:
         )
         cur.connection.commit()
 
+
 def get_new_candidates(date: str, path: str) -> list[dict]:
     """Return all 'new' candidates for a given date, ordered by score desc."""
     with db.get_db_cursor(path) as cur:
@@ -56,10 +60,19 @@ def get_new_candidates(date: str, path: str) -> list[dict]:
         )
         return [dict(r) for r in cur.fetchall()]
 
+
 def mark_candidate(post_url: str, status: str, path: str) -> None:
     """Update the status of a candidate ('replied' | 'skipped')."""
-    db.mark_status(path, "candidates", "post_url", post_url, "status", status, 
-                   timestamp_col="replied_at" if status == "replied" else None)
+    db.mark_status(
+        path,
+        "candidates",
+        "post_url",
+        post_url,
+        "status",
+        status,
+        timestamp_col="replied_at" if status == "replied" else None,
+    )
+
 
 def get_status_summary(path: str) -> dict[str, int]:
     """Return counts per status across all candidates."""
@@ -69,9 +82,11 @@ def get_status_summary(path: str) -> dict[str, int]:
         cur.execute("SELECT status, COUNT(*) as cnt FROM candidates GROUP BY status")
         return {row[0]: row[1] for row in cur.fetchall()}
 
+
 def is_seen(post_url: str, path: str) -> bool:
     """Return True if the post URL is already in the store."""
     return db.is_seen(path, "candidates", "post_url", post_url)
+
 
 def clear_new_candidates(path: str, date_str: str | None = None) -> int:
     """Mark all 'new' candidates as 'skipped'. If date_str is provided, only clear that date."""
@@ -85,7 +100,7 @@ def clear_new_candidates(path: str, date_str: str | None = None) -> int:
             )
         else:
             cur.execute("UPDATE candidates SET status = 'skipped' WHERE status = 'new'")
-        
+
         count = cur.rowcount
         cur.connection.commit()
         return count

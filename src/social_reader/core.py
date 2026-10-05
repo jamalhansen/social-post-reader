@@ -1,4 +1,3 @@
-
 import typer
 
 from . import config

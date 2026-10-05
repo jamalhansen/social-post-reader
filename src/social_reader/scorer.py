@@ -175,9 +175,7 @@ def score_posts(
     return results
 
 
-def format_digest(
-    scored_posts: list[ScoredPost], date_str: str, max_posts: int = 5
-) -> str:
+def format_digest(scored_posts: list[ScoredPost], date_str: str, max_posts: int = 5) -> str:
     """Format scored posts as a Markdown reply-candidates digest block.
 
     Args:

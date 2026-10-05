@@ -49,9 +49,7 @@ KEYWORDS: list[str] = _social_cfg.get(
     "keywords",
     ["duckdb", "python", "local ai", "sqlite", "llm", "sql"],
 )
-MASTODON_INSTANCES: list[str] = _social_cfg.get(
-    "mastodon_instances", ["mastodon.social", "fosstodon.org"]
-)
+MASTODON_INSTANCES: list[str] = _social_cfg.get("mastodon_instances", ["mastodon.social", "fosstodon.org"])
 INCLUDE_LINK_POSTS: bool = _social_cfg.get("include_link_posts", False)
 
 # ── Profile for angle generation ─────────────────────────────────────────────
@@ -72,6 +70,7 @@ DEFAULT_PROVIDER: str = os.environ.get("MODEL_PROVIDER") or _settings.get("provi
 DEFAULT_SINCE_HOURS: int = _settings.get("since_hours", 48)
 DEFAULT_SCORE_LIMIT: int = _settings.get("score_limit", 75)
 DEFAULT_MIN_WORDS: int = _settings.get("min_words", 10)
+
 
 def _resolve_db_path() -> str:
     """Resolve the SQLite DB path with three-tier priority:

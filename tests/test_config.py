@@ -15,10 +15,7 @@ def test_resolve_db_path_env_var():
 
 def test_resolve_db_path_settings():
     """DB path resolved from settings (TOML)."""
-    with (
-        patch.dict(os.environ, {}, clear=True),
-        patch("social_reader.config._settings", {"store": "~/my.db"})
-    ):
+    with patch.dict(os.environ, {}, clear=True), patch("social_reader.config._settings", {"store": "~/my.db"}):
         expected = os.path.expanduser("~/my.db")
         assert config._resolve_db_path() == expected
 
@@ -29,7 +26,7 @@ def test_resolve_db_path_sync_dir():
         patch.dict(os.environ, {}, clear=True),
         patch("social_reader.config._settings", {}),
         patch("pathlib.Path.home", return_value=Path("/mock/home")),
-        patch("pathlib.Path.exists", return_value=True)
+        patch("pathlib.Path.exists", return_value=True),
     ):
         res = config._resolve_db_path()
         assert "social-post-reader.db" in res
@@ -41,7 +38,7 @@ def test_resolve_db_path_fallback():
     with (
         patch.dict(os.environ, {}, clear=True),
         patch("social_reader.config._settings", {}),
-        patch("pathlib.Path.exists", return_value=False)
+        patch("pathlib.Path.exists", return_value=False),
     ):
         res = config._resolve_db_path()
         assert ".local-first" in res.replace("\\", "/")
@@ -58,10 +55,8 @@ def test_load_toml_success():
     """TOML loaded if config file exists."""
     mock_content = b'[social]\nkeywords=["test"]'
     import io
+
     buf = io.BytesIO(mock_content)
-    with (
-        patch("pathlib.Path.exists", return_value=True),
-        patch("builtins.open", return_value=buf)
-    ):
+    with patch("pathlib.Path.exists", return_value=True), patch("builtins.open", return_value=buf):
         res = config._load_toml()
         assert res["social"]["keywords"] == ["test"]

@@ -42,10 +42,7 @@ def _bsky_raw_post(text="Hello DuckDB", has_embed=False, tags=None):
         "facets": [],
     }
     if tags:
-        record["facets"] = [
-            {"features": [{"$type": "app.bsky.richtext.facet#tag", "tag": t}]}
-            for t in tags
-        ]
+        record["facets"] = [{"features": [{"$type": "app.bsky.richtext.facet#tag", "tag": t}]} for t in tags]
     post = {
         "author": {"handle": "user.bsky.social", "displayName": "Test User"},
         "record": record,
@@ -74,6 +71,7 @@ def _mastodon_raw_status(text="<p>Hello DuckDB from Mastodon</p>", has_card=Fals
 
 # ── fetch_bluesky_posts ──────────────────────────────────────────────────────
 
+
 class TestFetchBlueSkyPosts:
     def test_returns_empty_for_no_keywords(self):
         result = fetch_bluesky_posts([])
@@ -84,7 +82,10 @@ class TestFetchBlueSkyPosts:
         with (
             patch("social_reader.fetcher.bluesky.fetch_posts", return_value=raw),
             patch("social_reader.fetcher.bluesky.has_external_link", return_value=False),
-            patch("social_reader.fetcher.bluesky.get_post_url", return_value="https://bsky.app/profile/user.bsky.social/post/abc"),
+            patch(
+                "social_reader.fetcher.bluesky.get_post_url",
+                return_value="https://bsky.app/profile/user.bsky.social/post/abc",
+            ),
         ):
             result = fetch_bluesky_posts(["python"])
         assert len(result) == 1
@@ -142,6 +143,7 @@ class TestFetchBlueSkyPosts:
 
 # ── fetch_mastodon_posts ─────────────────────────────────────────────────────
 
+
 class TestFetchMastodonPosts:
     def test_returns_empty_for_no_keywords(self):
         result = fetch_mastodon_posts([])
@@ -175,7 +177,19 @@ class TestFetchMastodonPosts:
         assert len(result) == 1
 
     def test_skips_posts_without_url(self):
-        raw = [{"url": "", "content": "<p>No URL</p>", "account": {}, "created_at": "", "replies_count": 0, "favourites_count": 0, "tags": [], "card": None, "_instance": "mastodon.social"}]
+        raw = [
+            {
+                "url": "",
+                "content": "<p>No URL</p>",
+                "account": {},
+                "created_at": "",
+                "replies_count": 0,
+                "favourites_count": 0,
+                "tags": [],
+                "card": None,
+                "_instance": "mastodon.social",
+            }
+        ]
         with patch("social_reader.fetcher.mastodon.fetch_posts", return_value=raw):
             result = fetch_mastodon_posts(["duckdb"])
         assert result == []
@@ -204,6 +218,7 @@ class TestFetchMastodonPosts:
 
 
 # ── filter_posts ─────────────────────────────────────────────────────────────
+
 
 class TestFilterPosts:
     def test_keeps_recent_english_long_post(self):
