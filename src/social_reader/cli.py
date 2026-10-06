@@ -14,6 +14,7 @@ Usage:
 import logging
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -164,9 +165,19 @@ def run(
     # Append to daily note
     if not no_obsidian:
         try:
+            # Fixed 2026-10-06: this passed a str vault_root and called
+            # append_to_daily_note(digest, vault_root=...), which takes (note_path, content),
+            # so it always raised and fell through to the warning below -- the append never
+            # ran. Daily notes live in Timeline/, as transcription-summarizer writes them.
             vault_path = os.environ.get("OBSIDIAN_VAULT")
-            note_path = get_daily_note_path(vault_root=vault_path, note_date=datetime.now().astimezone().date())
-            append_to_daily_note(digest, vault_root=vault_path)
+            if not vault_path:
+                raise RuntimeError("OBSIDIAN_VAULT is not set")
+            note_path = get_daily_note_path(
+                vault_root=Path(vault_path).expanduser(),
+                note_date=datetime.now().astimezone().date(),
+                subdir=config.DAILY_NOTE_DIR,
+            )
+            append_to_daily_note(note_path, digest)
             typer.echo(f"Appended digest to {note_path}")
         except Exception as e:  # noqa: BLE001 - the digest is still printed below either way; a write failure should degrade, not crash after the real work (fetch+score) already succeeded
             typer.echo(f"Warning: could not write to daily note: {e}", err=True)

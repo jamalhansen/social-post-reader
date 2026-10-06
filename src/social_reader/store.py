@@ -38,6 +38,8 @@ def upsert_candidate(scored: ScoredPost, date: str, path: str) -> None:
     """Insert a scored post; ignore if the URL was already stored."""
     p = scored.post
     with db.get_db_cursor(path) as cur:
+        if cur is None:  # get_db_cursor yields None when the file is missing; callers init_db first
+            raise FileNotFoundError(f"candidate store not initialized: {path}")
         cur.execute(
             """
             INSERT OR IGNORE INTO candidates

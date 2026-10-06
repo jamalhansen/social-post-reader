@@ -97,3 +97,7 @@ STORE_PATH: str = _resolve_db_path()
 # Generate an App Password: Bluesky → Settings → Privacy and Security → App Passwords
 BLUESKY_HANDLE: str = os.environ.get("BLUESKY_HANDLE", "")
 BLUESKY_APP_PASSWORD: str = os.environ.get("BLUESKY_APP_PASSWORD", "")  # nosec B105
+
+# ── Obsidian ─────────────────────────────────────────────────────────────────
+# Daily notes folder under $OBSIDIAN_VAULT (transcription-summarizer uses the same).
+DAILY_NOTE_DIR: str = os.environ.get("OBSIDIAN_DAILY_NOTE_DIR", "Timeline")

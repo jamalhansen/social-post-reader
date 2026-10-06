@@ -141,7 +141,9 @@ def fetch_mastodon_posts(
 
     raw_statuses = []
     for keyword in keywords:
-        for status in mastodon.fetch_posts([keyword], instances=instances, limit=limit_per_tag, tool=_TOOL):
+        for status in mastodon.fetch_posts(
+            [keyword], instances=instances or mastodon.DEFAULT_INSTANCES, limit=limit_per_tag, tool=_TOOL
+        ):
             # Attach keyword metadata
             status["_keyword"] = keyword
             raw_statuses.append(status)
