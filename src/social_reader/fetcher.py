@@ -15,6 +15,7 @@ Mastodon:
 import logging
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from urllib.parse import urlparse
 
 from local_first_common.social import bluesky, mastodon
 from local_first_common.text import is_english, strip_html
@@ -116,6 +117,17 @@ def fetch_bluesky_posts(
     return posts
 
 
+def _mastodon_handle(acct: str, instance: str | None, post_url: str) -> str:
+    """user@instance. Mastodon's `acct` already carries the domain for remote accounts; for
+    local ones it is bare, and the API response has no instance field of its own, so take
+    it from the status URL's host (the author's home instance). Before 2026-10-07 this
+    read a `_instance` key nothing set and produced `user@mastodon.social@unknown`."""
+    if "@" in acct:
+        return acct
+    host = instance or urlparse(post_url).hostname or ""
+    return f"{acct}@{host}" if acct and host else acct
+
+
 def fetch_mastodon_posts(
     keywords: list[str],
     instances: list[str] | None = None,
@@ -167,13 +179,12 @@ def fetch_mastodon_posts(
             continue
 
         account = status.get("account") or {}
-        instance = status.get("_instance", "unknown")
         tags = [t.get("name", "").lower() for t in status.get("tags", [])]
 
         posts.append(
             SocialPost(
                 platform="mastodon",
-                author_handle=f"{account.get('acct', '')}@{instance}",
+                author_handle=_mastodon_handle(account.get("acct", ""), status.get("_instance"), post_url),
                 author_display_name=account.get("display_name", ""),
                 text=text,
                 post_url=post_url,

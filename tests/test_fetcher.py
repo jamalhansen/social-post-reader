@@ -200,6 +200,21 @@ class TestFetchMastodonPosts:
             result = fetch_mastodon_posts(["duckdb"])
         assert result == []
 
+    def test_author_handle_comes_from_acct_or_the_post_url_host(self):
+        """Real responses carry no `_instance`; handles came out as user@mastodon.social@unknown."""
+        from social_reader.fetcher import _mastodon_handle
+
+        assert (
+            _mastodon_handle("treyhunner", None, "https://mastodon.social/@treyhunner/1")
+            == "treyhunner@mastodon.social"
+        )
+        assert (
+            _mastodon_handle("patcedar@techhub.social", None, "https://mastodon.social/@patcedar@techhub.social/2")
+            == "patcedar@techhub.social"
+        )
+        assert _mastodon_handle("someone", "fosstodon.org", "") == "someone@fosstodon.org"
+        assert _mastodon_handle("", None, "https://x.y/z") == ""
+
     def test_author_handle_includes_instance(self):
         raw = [_mastodon_raw_status("<p>DuckDB content for testing handle</p>")]
         raw[0]["account"]["acct"] = "user123"
