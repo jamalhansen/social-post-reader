@@ -58,6 +58,7 @@ _settings = _cfg.get("settings", {})
 
 DEFAULT_THRESHOLD: float = _settings.get("threshold", 0.5)
 DEFAULT_MAX_CANDIDATES: int = _settings.get("max_candidates", 5)
+DEFAULT_TOP_PICKS: int = _settings.get("top_picks", 3)  # the day's picks, rated with /rate-replies
 DEFAULT_PROVIDER: str = os.environ.get("MODEL_PROVIDER") or _settings.get("provider", "local")
 DEFAULT_SINCE_HOURS: int = _settings.get("since_hours", 48)
 DEFAULT_SCORE_LIMIT: int = _settings.get("score_limit", 75)

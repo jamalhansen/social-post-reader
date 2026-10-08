@@ -11,6 +11,7 @@ Usage:
     uv run social_post_reader.py status
 """
 
+import json
 import logging
 import os
 from datetime import datetime
@@ -20,6 +21,7 @@ from typing import Annotated
 import typer
 from local_first_common.cli import (
     dry_run_option,
+    json_option,
     no_llm_option,
     resolve_dry_run,
     resolve_provider,
@@ -62,6 +64,10 @@ def run(
         int,
         typer.Option("--max", help="Maximum candidates in the digest"),
     ] = config.DEFAULT_MAX_CANDIDATES,
+    top: Annotated[
+        int,
+        typer.Option("--top", help="Mark the N best candidates as the day's picks (rated with /rate-replies)"),
+    ] = config.DEFAULT_TOP_PICKS,
     since_hours: Annotated[
         int,
         typer.Option("--since-hours", help="Ignore posts older than N hours (0 = no limit)"),
@@ -91,9 +97,13 @@ def run(
             help="Drop non-English posts before scoring",
         ),
     ] = True,
-    no_obsidian: Annotated[
+    obsidian: Annotated[
         bool,
-        typer.Option("--no-obsidian", help="Skip appending to daily note"),
+        typer.Option(
+            "--obsidian/--no-obsidian",
+            help="Also append the digest to today's daily note (off by default since 2026-10-07: the picks "
+            "are reviewed with /rate-replies instead)",
+        ),
     ] = False,
 ) -> None:
     """Fetch posts, score them, and write a reply-candidates digest."""
@@ -144,9 +154,19 @@ def run(
         typer.echo(f"  → Capped at {score_limit} posts for scoring (sorted by engagement)")
         all_posts = all_posts[:score_limit]
 
+    # Jamal's verdicts on earlier picks steer the scorer (store.examples); the model's own
+    # unrated picks fill in behind them.
+    examples = None
+    if not no_store and not dry_run:
+        db_store.init_db(store_path)
+        examples = db_store.examples(store_path)
+        shown = sum(len(v) for v in examples.values())
+        if shown:
+            typer.echo(f"  → {shown} earlier verdicts/picks shown to the scorer")
+
     typer.echo(f"Scoring {len(all_posts)} posts...")
 
-    scored = score_posts(all_posts, config.PROFILE, llm, threshold=threshold, verbose=verbose)
+    scored = score_posts(all_posts, config.PROFILE, llm, threshold=threshold, verbose=verbose, examples=examples)
     typer.echo(f"Found {len(scored)} candidates above threshold {threshold}")
 
     digest = format_digest(scored, today, max_posts=max_candidates)
@@ -161,9 +181,11 @@ def run(
         for sc in scored:
             db_store.upsert_candidate(sc, today, store_path)
         typer.echo(f"Stored {min(len(scored), max_candidates)} candidates in {store_path}")
+        picks = db_store.mark_picks(today, top, store_path)
+        typer.echo(f"Today's picks ({len(picks)}): rate them with /rate-replies or `social-reader verdict pending`")
 
     # Append to daily note
-    if not no_obsidian:
+    if obsidian:
         try:
             # Fixed 2026-10-06: this passed a str vault_root and called
             # append_to_daily_note(digest, vault_root=...), which takes (note_path, content),
@@ -238,6 +260,81 @@ def review(
         typer.echo()
 
     typer.echo(f"Done. Replied: {replied}, Skipped: {skipped}")
+
+
+verdict_app = typer.Typer(
+    help="Jamal's verdicts on the day's picks: the scorer's teacher and its scorecard.", no_args_is_help=True
+)
+app.add_typer(verdict_app, name="verdict")
+
+
+def _echo_json(obj) -> None:
+    typer.echo(json.dumps(obj, indent=2, default=str))
+
+
+@verdict_app.command("pending")
+def verdict_pending(
+    limit: Annotated[int, typer.Option("--limit", "-n", help="How many unrated picks to show")] = 6,
+    days: Annotated[int, typer.Option("--days", help="Look back this many days")] = 7,
+    store_path: Annotated[str, typer.Option("--store", help="SQLite DB path")] = config.STORE_PATH,
+    as_json: Annotated[bool, json_option()] = False,
+) -> None:
+    """Recent picks not yet rated. Blind by design: the skill hides score and angle until after the verdict."""
+    db_store.init_db(store_path)
+    rows = db_store.verdict_pending(store_path, limit=limit, days=days)
+    if as_json:
+        _echo_json(rows)
+        return
+    if not rows:
+        typer.echo("No unrated picks.")
+        return
+    for i, r in enumerate(rows, 1):
+        typer.echo(
+            f"{i}. [{r['id']}] {r['date']} {r['platform']} @{r['author_handle']}\n   {r['text'][:200]}\n   {r['post_url']}"
+        )
+
+
+@verdict_app.command("set")
+def verdict_set(
+    ref: Annotated[str, typer.Argument(help="Candidate id, URL, or URL fragment")],
+    verdict: Annotated[str, typer.Argument(help="reply (yes, and I want to answer it) | keep | dismiss")],
+    note: Annotated[str | None, typer.Option("--note", help="Why -- the scorer reads this")] = None,
+    store_path: Annotated[str, typer.Option("--store", help="SQLite DB path")] = config.STORE_PATH,
+) -> None:
+    """Record Jamal's verdict on one pick."""
+    db_store.init_db(store_path)
+    try:
+        row = db_store.set_verdict(ref, verdict, store_path, note)
+    except (LookupError, ValueError) as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(1) from None
+    agreed = "agreed" if bool(row["pick"]) == (verdict in ("reply", "keep")) else "DISAGREED"
+    typer.echo(
+        f"#{row['id']} @{row['author_handle']}: {verdict} (model scored {row['score']:.2f}, pick={row['pick']}, {agreed})"
+    )
+
+
+@verdict_app.command("stats")
+def verdict_stats(
+    store_path: Annotated[str, typer.Option("--store", help="SQLite DB path")] = config.STORE_PATH,
+    as_json: Annotated[bool, json_option()] = False,
+) -> None:
+    """Model-vs-Jamal agreement on rated picks, overall and by score band."""
+    db_store.init_db(store_path)
+    st = db_store.verdict_stats(store_path)
+    if as_json:
+        _echo_json(st)
+        return
+    if not st["rated"]:
+        typer.echo("No verdicts yet.")
+        return
+    pct = round(100 * st["agreed"] / st["rated"])
+    v = st["verdicts"]
+    typer.echo(
+        f"rated: {st['rated']}  agreed: {st['agreed']}  agreement: {pct}%  (reply {v['reply']}, keep {v['keep']}, dismiss {v['dismiss']})"
+    )
+    for band, b in st["bands"].items():
+        typer.echo(f"  score {band}: {b['rated']} rated, {b['positive']} positive, {b['agreed']} agreed")
 
 
 @app.command()

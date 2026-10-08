@@ -52,7 +52,36 @@ For each post, decide:
 Reply with ONLY valid JSON. No markdown fences. No extra keys.
 Format:
 {{"score": 0.75, "angle": "..."}}
-"""
+{examples}"""
+
+_EXAMPLES_HEADER = (
+    "\nPosts this person has already judged, newest first. Their own verdicts are marked [theirs]; "
+    "the rest are earlier picks of yours they haven't rated yet.\n"
+)
+_EXAMPLE_SIDES = (
+    ("reply", "WANTED TO REPLY TO (the strongest kind of yes)"),
+    ("keep", "WORTH SEEING"),
+    ("dismiss", "NOT WORTH SEEING"),
+)
+
+
+def format_examples(examples: dict[str, list[dict]] | None) -> str:
+    """The few-shot block for the system prompt, or "" when there is nothing to show."""
+    if not examples or not any(examples.values()):
+        return ""
+    lines = [_EXAMPLES_HEADER]
+    for key, title in _EXAMPLE_SIDES:
+        rows = examples.get(key) or []
+        if not rows:
+            continue
+        lines.append(f"{title}:")
+        for r in rows:
+            tag = " [theirs]" if r.get("human") else ""
+            note = f' -- their note: "{r["note"]}"' if r.get("note") else ""
+            lines.append(f'- "{r["text"]}"{tag}{note}')
+        lines.append("")
+    return "\n".join(lines)
+
 
 _USER_TEMPLATE = """\
 Platform: {platform}
@@ -76,6 +105,7 @@ def score_post(
     post: SocialPost,
     profile: str,
     provider,
+    examples: dict[str, list[dict]] | None = None,
 ) -> ScoredPost:
     """Score a single post and generate an angle using the given provider.
 
@@ -87,7 +117,7 @@ def score_post(
     Returns:
         ScoredPost with score and angle, or score=0.0/angle="" on LLM failure.
     """
-    system = _SYSTEM_TEMPLATE.format(profile=profile.strip())
+    system = _SYSTEM_TEMPLATE.format(profile=profile.strip(), examples=format_examples(examples))
     user = _USER_TEMPLATE.format(
         platform=post.platform,
         author=post.author_display_name or post.author_handle,
@@ -146,6 +176,7 @@ def score_posts(
     provider,
     threshold: float = 0.5,
     verbose: bool = False,
+    examples: dict[str, list[dict]] | None = None,
 ) -> list[ScoredPost]:
     """Score a list of posts and return those above the threshold, sorted by score.
 
@@ -161,7 +192,7 @@ def score_posts(
     """
     results: list[ScoredPost] = []
     for post in posts:
-        scored = score_post(post, profile, provider)
+        scored = score_post(post, profile, provider, examples)
         if verbose:
             logger.info(
                 "[%.2f] @%s — %s",

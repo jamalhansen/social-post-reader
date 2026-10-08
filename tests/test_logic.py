@@ -68,7 +68,7 @@ def test_run_command_dry_run(mock_init, mock_format, mock_score, mock_fetch, moc
     mock_format.return_value = "DIGEST_CONTENT"
 
     # Run the command
-    cli.run(dry_run=True, no_obsidian=True)
+    cli.run(dry_run=True)
 
     mock_fetch.assert_called_once()
     mock_score.assert_called_once()

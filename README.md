@@ -16,6 +16,23 @@ Part of the [local-first AI tools series](https://jamalhansen.com/series/local-f
 4. Appends a digest to today's Obsidian daily note under `## Reply Candidates`
 5. Optionally stores candidates in SQLite for tracking (did you reply?)
 
+## Daily picks and verdicts (2026-10-07)
+
+`social-reader run` runs daily at 07:30 (`com.localfirst.social-reader`, personal-infra)
+and marks the day's top 3 candidates as **picks** (`--top`). Rate them blind with the
+`/rate-replies` skill, or by hand:
+
+```bash
+social-reader verdict pending          # unrated picks, last 7 days
+social-reader verdict set 42 reply --note "I have a story about this"   # reply | keep | dismiss
+social-reader verdict stats            # model-vs-Jamal agreement by score band
+```
+
+Verdicts are the scorer's teacher: `store.examples()` puts them (notes included) ahead of
+the model's own unrated picks in the prompt's few-shot block. `reply` is the strongest yes.
+The digest is no longer appended to the daily note by default (`--obsidian` turns it on).
+Config: `~/.config/local-first/social-post-reader.toml`, kept in `personal-infra/config/`.
+
 ## Sample output
 
 ```
