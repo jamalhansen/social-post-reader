@@ -45,18 +45,22 @@ def test_resolve_db_path_fallback():
         assert "local-first.db" in res
 
 
-def test_load_toml_not_found():
-    """Empty dict returned if config file doesn't exist."""
-    with patch("pathlib.Path.exists", return_value=False):
-        assert config._load_toml() == {}
+def test_config_comes_from_the_fleet_config_dir(tmp_path, monkeypatch):
+    """Settings are read from ~/.config/local-first/social-post-reader.toml (kept in
+    personal-infra); a missing file leaves the built-in defaults in place."""
+    import importlib
 
+    from local_first_common import config as lfc_config
 
-def test_load_toml_success():
-    """TOML loaded if config file exists."""
-    mock_content = b'[social]\nkeywords=["test"]'
-    import io
-
-    buf = io.BytesIO(mock_content)
-    with patch("pathlib.Path.exists", return_value=True), patch("builtins.open", return_value=buf):
-        res = config._load_toml()
-        assert res["social"]["keywords"] == ["test"]
+    monkeypatch.setattr(lfc_config, "CONFIG_DIR", tmp_path)
+    try:
+        importlib.reload(config)
+        assert "python" in config.KEYWORDS  # defaults
+        (tmp_path / "social-post-reader.toml").write_text(
+            '[social]\nkeywords = ["test"]\n[profile]\ndescription = "me"\n'
+        )
+        importlib.reload(config)
+        assert config.KEYWORDS == ["test"] and config.PROFILE == "me"
+    finally:
+        monkeypatch.undo()
+        importlib.reload(config)

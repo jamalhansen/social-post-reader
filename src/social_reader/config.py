@@ -1,9 +1,10 @@
 """Configuration for social-post-reader.
 
-Personal settings live in ~/.social-post-reader.toml (gitignored).
+Personal settings live in ~/.config/local-first/social-post-reader.toml (the fleet
+convention; the file itself is kept in personal-infra/config/ and symlinked in).
 Environment variables override TOML values where noted.
 
-Example ~/.social-post-reader.toml:
+Example ~/.config/local-first/social-post-reader.toml:
 
     [social]
     keywords = ["duckdb", "python", "local ai", "sqlite", "llm", "sql"]
@@ -27,20 +28,11 @@ Example ~/.social-post-reader.toml:
 """
 
 import os
-import tomllib
 from pathlib import Path
 
-_CONFIG_FILE = Path.home() / ".social-post-reader.toml"
+from local_first_common.config import load_config
 
-
-def _load_toml() -> dict:
-    if _CONFIG_FILE.exists():
-        with open(_CONFIG_FILE, "rb") as f:
-            return tomllib.load(f)
-    return {}
-
-
-_cfg = _load_toml()
+_cfg = load_config("social-post-reader")
 
 # ── Social sources ────────────────────────────────────────────────────────────
 _social_cfg = _cfg.get("social", {})
@@ -76,7 +68,7 @@ def _resolve_db_path() -> str:
     """Resolve the SQLite DB path with three-tier priority:
 
     1. SOCIAL_POST_READER_STORE env var
-    2. [settings] store in ~/.social-post-reader.toml
+    2. [settings] store in ~/.config/local-first/social-post-reader.toml
     3. ~/sync/social-reader/social-post-reader.db — if the directory exists
        (place the DB in a cloud-synced folder by creating ~/sync/social-reader/)
     4. ~/.local-first/local-first.db — shared coordination DB (legacy fallback)
